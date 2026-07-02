@@ -16,6 +16,10 @@ config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 config/run/main_scene="res://scenes/main.tscn"
 
+[autoload]
+
+Classes="*res://scripts/classes.gd"
+
 [display]
 
 window/stretch/mode="canvas_items"

@@ -25,8 +25,10 @@ func _ready() -> void:
 	player.soul_bind_completed.connect(_on_soul_bind_completed)
 	player.died.connect(_on_player_died)
 
+	var start_classes: Array[String] = ["warrior", "archer", "tank"]
 	for i in starting_minions:
-		_spawn_minion(player.global_position + Vector2(randf_range(-60, 60), randf_range(40, 100)))
+		var cid: String = start_classes[i % start_classes.size()]
+		_spawn_minion(player.global_position + Vector2(randf_range(-60, 60), randf_range(40, 100)), cid)
 
 	_start_room(1)
 
@@ -92,8 +94,9 @@ func _reset_camera() -> void:
 
 # --- Spawning / resurrection ----------------------------------------------
 
-func _spawn_minion(pos: Vector2) -> Minion:
+func _spawn_minion(pos: Vector2, class_id: String = "warrior") -> Minion:
 	var m: Minion = MinionScene.instantiate()
+	m.archetype = Classes.minion(class_id)  # set before add_child so _ready applies it
 	m.global_position = pos
 	m.player = player
 	actors.add_child(m)
@@ -101,7 +104,9 @@ func _spawn_minion(pos: Vector2) -> Minion:
 
 func _on_soul_bind_completed(corpse: Node2D) -> void:
 	if corpse != null and is_instance_valid(corpse):
-		_spawn_minion(corpse.global_position)
+		# Raise a minion of the same class as the enemy that left this corpse.
+		var cid: String = corpse.source_class if "source_class" in corpse else "warrior"
+		_spawn_minion(corpse.global_position, cid)
 		corpse.queue_free()
 
 # --- Desperation gate (GDD 3.3) -------------------------------------------

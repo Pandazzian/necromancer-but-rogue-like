@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="UnitArchetype" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/unit_archetype.gd" id="1_arch"]
+
+[resource]
+script = ExtResource("1_arch")
+id = "mage"
+display_name = "Flame Cleric"
+color = Color(0.85, 0.3, 0.6, 1)
+body_radius = 13.0
+max_hp = 26.0
+defense = 0.0
+move_speed = 90.0
+attack_damage = 7.0
+attack_range = 240.0
+attack_cooldown = 1.8
+attack_type = 2
+projectile_speed = 330.0
+aoe_radius = 85.0

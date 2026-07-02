@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="UnitArchetype" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/unit_archetype.gd" id="1_arch"]
+
+[resource]
+script = ExtResource("1_arch")
+id = "tank"
+display_name = "Bone Bulwark"
+color = Color(0.4, 0.55, 0.75, 1)
+body_radius = 18.0
+max_hp = 130.0
+defense = 8.0
+move_speed = 150.0
+attack_damage = 6.0
+attack_range = 46.0
+attack_cooldown = 1.0
+attack_type = 0
+projectile_speed = 480.0
+aoe_radius = 0.0
