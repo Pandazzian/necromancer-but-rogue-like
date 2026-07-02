@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cq0necro0crpt"]
+
+[ext_resource type="Script" path="res://scripts/crypt_screen.gd" id="1_crypt"]
+
+[node name="CryptScreen" type="CanvasLayer"]
+script = ExtResource("1_crypt")

@@ -1,18 +1,19 @@
 extends Node2D
 ## Run controller (Hades-style). The player clears one walled Room at a time;
-## clearing all enemies opens the exit door, and walking through loads the next
-## room. The Necromancer and surviving minions persist between rooms.
+## clearing all enemies opens the exit door. Walking through opens the Crypt
+## management screen (Flesh-Stitching / swaps), then loads the next room.
+## The roster persists in the Crypt autoload; field minions are spawned from it.
 
 const MinionScene: PackedScene = preload("res://scenes/minion.tscn")
 const RoomScene: PackedScene = preload("res://scenes/room.tscn")
 
-@export var starting_minions: int = 3
 @export var base_enemies: int = 3  # enemies = base_enemies + room number
 
 @onready var player: Player = $Actors/Player
 @onready var actors: Node2D = $Actors
 @onready var commander: Node2D = $RTSCommander
 @onready var info_label: Label = $HUD/Info
+@onready var crypt_screen: CanvasLayer = $CryptScreen
 
 var _room_number: int = 0
 var _current_room: Room = null
@@ -24,11 +25,12 @@ func _ready() -> void:
 	commander.player = player
 	player.soul_bind_completed.connect(_on_soul_bind_completed)
 	player.died.connect(_on_player_died)
+	crypt_screen.continue_pressed.connect(_advance_room)
 
-	var start_classes: Array[String] = ["warrior", "archer", "tank"]
-	for i in starting_minions:
-		var cid: String = start_classes[i % start_classes.size()]
-		_spawn_minion(player.global_position + Vector2(randf_range(-60, 60), randf_range(40, 100)), cid)
+	# Fresh run roster.
+	Crypt.reset_run()
+	for cid in ["warrior", "archer", "tank"]:
+		Crypt.add_to_party(cid)
 
 	_start_room(1)
 
@@ -47,11 +49,11 @@ func _start_room(n: int) -> void:
 	_current_room = room
 	room.player = player
 
-	# Place the party at the new room's entrance.
+	# Place the Necromancer at the entrance and (re)deploy the active party.
 	player.global_position = room.entrance_position()
 	player.velocity = Vector2.ZERO
 	player.exit_desperation()
-	_reposition_minions(player.global_position)
+	_deploy_party(player.global_position)
 	_reset_camera()
 
 	room.room_cleared.connect(_on_room_cleared)
@@ -59,33 +61,32 @@ func _start_room(n: int) -> void:
 	room.begin(base_enemies + n)
 
 func _on_room_cleared() -> void:
-	pass  # HUD reacts to the door state; hook for SFX/rewards later.
+	pass  # HUD reacts to the door state.
 
 func _on_room_exited() -> void:
 	if _transitioning:
 		return
 	_transitioning = true
-	# Defer: we're inside the door Area2D's physics callback.
-	call_deferred("_advance_room")
+	# Between rooms: pause for Crypt management (deferred - we're in a physics cb).
+	crypt_screen.call_deferred("open")
 
 func _advance_room() -> void:
 	if is_instance_valid(_current_room):
 		_current_room.queue_free()
 	_start_room(_room_number + 1)
 
-func _reposition_minions(center: Vector2) -> void:
-	var minions: Array = get_tree().get_nodes_in_group("minions")
-	var count: int = maxi(1, minions.size())
+## Despawn last room's minion nodes and spawn fresh ones from the active party.
+func _deploy_party(center: Vector2) -> void:
+	for m in get_tree().get_nodes_in_group("minions"):
+		m.remove_from_group("minions")  # so counts are correct this frame
+		m.queue_free()
+	var count: int = maxi(1, Crypt.party.size())
 	var i: int = 0
-	for m in minions:
-		if m is Minion:
-			var ang: float = TAU * float(i) / float(count)
-			m.global_position = center + Vector2(cos(ang), sin(ang)) * 70.0
-			m.velocity = Vector2.ZERO
-			m.target = null
-			m.order_pos = m.global_position
-			m.state = Minion.State.IDLE
-			i += 1
+	for inst in Crypt.party:
+		var ang: float = TAU * float(i) / float(count)
+		var pos: Vector2 = center + Vector2(cos(ang), sin(ang)) * 70.0
+		_spawn_minion(inst, pos)
+		i += 1
 
 func _reset_camera() -> void:
 	var cam := player.get_node_or_null("Camera2D")
@@ -94,20 +95,31 @@ func _reset_camera() -> void:
 
 # --- Spawning / resurrection ----------------------------------------------
 
-func _spawn_minion(pos: Vector2, class_id: String = "warrior") -> Minion:
+func _spawn_minion(inst: MinionInstance, pos: Vector2) -> Minion:
 	var m: Minion = MinionScene.instantiate()
-	m.archetype = Classes.minion(class_id)  # set before add_child so _ready applies it
+	# Assign data before add_child so _ready() configures class + tier.
+	m.instance = inst
+	m.archetype = Classes.minion(inst.class_id)
 	m.global_position = pos
 	m.player = player
+	m.died.connect(_on_minion_died)
 	actors.add_child(m)
 	return m
 
+func _on_minion_died(entity: BaseEntity) -> void:
+	if entity is Minion and (entity as Minion).instance != null:
+		Crypt.remove((entity as Minion).instance)
+
 func _on_soul_bind_completed(corpse: Node2D) -> void:
-	if corpse != null and is_instance_valid(corpse):
-		# Raise a minion of the same class as the enemy that left this corpse.
-		var cid: String = corpse.source_class if "source_class" in corpse else "warrior"
-		_spawn_minion(corpse.global_position, cid)
-		corpse.queue_free()
+	if corpse == null or not is_instance_valid(corpse):
+		return
+	# Raise a minion of the same class as the enemy that left this corpse. It
+	# joins the active party if there's room, else it's stored in the Crypt.
+	var cid: String = corpse.source_class if "source_class" in corpse else "warrior"
+	var result: Dictionary = Crypt.capture(cid)
+	if result.dest == "party":
+		_spawn_minion(result.inst, corpse.global_position)
+	corpse.queue_free()
 
 # --- Desperation gate (GDD 3.3) -------------------------------------------
 
@@ -135,16 +147,13 @@ func _update_hud() -> void:
 		lines.append("YOU HAVE BEEN PURGED.  (restart: Ctrl+R in editor)")
 	else:
 		lines.append("Room %d    State: %s    HP: %d/%d" % [_room_number, state_names[player.state], roundi(player.current_hp), roundi(player.max_hp)])
-	var party_tag: String = "  [FULL]" if player.party_full() else ""
-	lines.append("Party: %d/%d%s    Enemies remaining: %d    Corpses: %d" % [minions, player.active_party_cap, party_tag, enemies, corpses])
+	lines.append("Deployed: %d/%d    Crypt: %d/%d    Enemies: %d    Corpses: %d" % [minions, Crypt.party_cap, Crypt.reserve.size(), Crypt.reserve_cap, enemies, corpses])
 	lines.append("WASD move | L-drag select | R-click move/attack | hold E near corpse: Soul Bind | 1-4 groups")
 	if not player.is_dead:
-		if player.party_full() and corpses > 0:
-			lines.append(">> PARTY FULL - sacrifice a minion or leave corpses behind. Choose your army wisely. <<")
-		elif enemies == 0:
-			lines.append(">> ROOM CLEARED! The door is open - walk through the green doorway to advance. >>")
+		if enemies == 0:
+			lines.append(">> ROOM CLEARED! Raise any corpses you want, then walk through the green doorway. >>")
 		elif corpses > 0:
-			lines.append(">> A corpse can be raised. Stand next to it and HOLD E.")
+			lines.append(">> A corpse can be raised. Stand next to it and HOLD E.  (overflow goes to the Crypt)")
 	info_label.text = "\n".join(lines)
 
 func _on_player_died(_e: BaseEntity) -> void:

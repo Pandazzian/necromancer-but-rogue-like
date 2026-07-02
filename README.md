@@ -13,6 +13,8 @@ This is the playable **combat vertical slice** — the novel, risky heart of the
 - **Soul Bind capture** (GDD 3.2) — defeated enemies leave a decaying corpse; stand next to it and **hold E** to raise it as a new minion. Channeling slows you 80%, exposing you to risk.
 - **Desperation Mode** (GDD 3.3) — when your last minion dies while enemies remain, you're locked out of command and get a weak melee flail (`Space`). Kite, kill one enemy, Soul Bind it, recover.
 - **Room-by-room progression** (Hades-style) — each room is a walled chamber. Inquisitors spawn on entry; the exit door stays sealed (red) until you clear them, then opens (green). Walk through to load the next room. Enemy count scales per room, and your surviving minions carry over.
+- **Unit classes** — Warrior (balanced), Tank (high HP/defense), Archer (long-range projectile), Mage (AoE) — shared by minions **and** enemies, data-driven via `UnitArchetype` resources. Soul-binding an enemy raises a minion of its class.
+- **The Crypt & Flesh-Stitching** (GDD 3.4) — captures beyond your active-party cap route into the stored Crypt. Between rooms (after walking through the door) a Crypt screen pauses the game so you can **merge two identical minions (same class + tier) into a Tier+1 version** (bigger, stronger, golden tier-pips) and swap units between the deployed party and the Crypt.
 
 ## Controls
 
