@@ -6,6 +6,16 @@ extends CharacterBody2D
 signal died(entity: BaseEntity)
 signal health_changed(current: float, maximum: float)
 
+# Physics layer bit-values. Units collide only with WORLD (walls), never with
+# each other - crowding is resolved by soft separation steering instead.
+const LAYER_WORLD: int = 1
+const LAYER_PLAYER: int = 2
+const LAYER_MINION: int = 4
+const LAYER_ENEMY: int = 8
+
+const SEPARATION_GAIN: float = 6.0
+const SEPARATION_MAX: float = 170.0
+
 @export var max_hp: float = 100.0
 ## Radius of this actor's body, used for drawing and melee range checks.
 @export var body_radius: float = 16.0
@@ -89,6 +99,32 @@ func die() -> void:
 ## Subclasses override to add drops, effects, etc. Default: despawn.
 func _on_death() -> void:
 	queue_free()
+
+## Boids-style separation: a velocity that pushes this unit away from nearby
+## units so crowds spread out instead of jamming. Add to velocity before
+## move_and_slide(). `groups` lists which unit groups to avoid.
+func compute_separation(groups: PackedStringArray) -> Vector2:
+	var push: Vector2 = Vector2.ZERO
+	for g in groups:
+		for other in get_tree().get_nodes_in_group(g):
+			if other == self or not (other is BaseEntity):
+				continue
+			var ob := other as BaseEntity
+			if ob.is_dead:
+				continue
+			var d: Vector2 = global_position - ob.global_position
+			var dist: float = d.length()
+			var min_d: float = body_radius + ob.body_radius + 4.0
+			if dist < min_d:
+				if dist > 0.001:
+					push += (d / dist) * (min_d - dist)
+				else:
+					# Exact overlap: shove apart in a random direction.
+					push += Vector2(randf() * 2.0 - 1.0, randf() * 2.0 - 1.0) * min_d
+	push *= SEPARATION_GAIN
+	if push.length() > SEPARATION_MAX:
+		push = push.normalized() * SEPARATION_MAX
+	return push
 
 ## Helper for subclasses: draw the body circle + a small HP bar in _draw().
 func _draw_body_and_health() -> void:
