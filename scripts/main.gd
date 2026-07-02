@@ -135,10 +135,13 @@ func _update_hud() -> void:
 		lines.append("YOU HAVE BEEN PURGED.  (restart: Ctrl+R in editor)")
 	else:
 		lines.append("Room %d    State: %s    HP: %d/%d" % [_room_number, state_names[player.state], roundi(player.current_hp), roundi(player.max_hp)])
-	lines.append("Minions: %d    Enemies remaining: %d    Corpses: %d" % [minions, enemies, corpses])
+	var party_tag: String = "  [FULL]" if player.party_full() else ""
+	lines.append("Party: %d/%d%s    Enemies remaining: %d    Corpses: %d" % [minions, player.active_party_cap, party_tag, enemies, corpses])
 	lines.append("WASD move | L-drag select | R-click move/attack | hold E near corpse: Soul Bind | 1-4 groups")
 	if not player.is_dead:
-		if enemies == 0:
+		if player.party_full() and corpses > 0:
+			lines.append(">> PARTY FULL - sacrifice a minion or leave corpses behind. Choose your army wisely. <<")
+		elif enemies == 0:
 			lines.append(">> ROOM CLEARED! The door is open - walk through the green doorway to advance. >>")
 		elif corpses > 0:
 			lines.append(">> A corpse can be raised. Stand next to it and HOLD E.")

@@ -13,12 +13,23 @@ enum State { COMMANDER, CHANNELING, DESPERATION }
 @export var soul_bind_range: float = 44.0
 @export var soul_bind_time: float = 1.5
 @export var soul_bind_slow: float = 0.2  # 80% slow while channeling
+## Max minions on the field at once (GDD 4 "Active Party limit"). Base value;
+## Tomes will modify this later. When full, Soul Bind is refused.
+@export var active_party_cap: int = 5
 
 var state: int = State.COMMANDER
 
 var _bind_timer: float = 0.0
 var _bind_target: Node2D = null
 var _desperation_atk_cd: float = 0.0
+var _party_full_flash: float = 0.0  # brief feedback when Soul Bind is refused
+
+## How many minions are currently on the field.
+func active_party_size() -> int:
+	return get_tree().get_nodes_in_group("minions").size()
+
+func party_full() -> bool:
+	return active_party_size() >= active_party_cap
 
 func _ready() -> void:
 	max_hp = 40.0  # fragile by design
@@ -29,6 +40,7 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_desperation_atk_cd = maxf(0.0, _desperation_atk_cd - delta)
+	_party_full_flash = maxf(0.0, _party_full_flash - delta)
 	match state:
 		State.COMMANDER:
 			_process_commander(delta)
@@ -43,9 +55,17 @@ func _physics_process(delta: float) -> void:
 func _process_commander(_delta: float) -> void:
 	_move(1.0)
 	if Input.is_action_just_pressed("soul_bind"):
-		var corpse: Node2D = _nearest_corpse()
-		if corpse != null:
-			_begin_channel(corpse)
+		_try_begin_soul_bind()
+
+## Start a Soul Bind if a corpse is in range and the party isn't full.
+func _try_begin_soul_bind() -> void:
+	var corpse: Node2D = _nearest_corpse()
+	if corpse == null:
+		return
+	if party_full():
+		_party_full_flash = 0.6  # refuse: no room in the active party
+		return
+	_begin_channel(corpse)
 
 func _move(speed_scale: float) -> void:
 	var dir: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down")
@@ -89,9 +109,7 @@ func _process_desperation(_delta: float) -> void:
 		_desperation_swing()
 	# A soul bind still lets you crawl back into Commander mode.
 	if Input.is_action_just_pressed("soul_bind"):
-		var corpse: Node2D = _nearest_corpse()
-		if corpse != null:
-			_begin_channel(corpse)
+		_try_begin_soul_bind()
 
 func _desperation_swing() -> void:
 	_desperation_atk_cd = 0.35
@@ -146,3 +164,9 @@ func _draw() -> void:
 	if state == State.CHANNELING:
 		var frac: float = clampf(_bind_timer / soul_bind_time, 0.0, 1.0)
 		draw_arc(Vector2.ZERO, body_radius + 6.0, -PI / 2.0, -PI / 2.0 + TAU * frac, 32, Color(0.6, 1.0, 0.7), 3.0)
+	# "Party full" refusal: a red no-entry ring above the head.
+	if _party_full_flash > 0.0:
+		var c := Vector2(0.0, -body_radius - 22.0)
+		var a: float = clampf(_party_full_flash / 0.6, 0.0, 1.0)
+		draw_arc(c, 9.0, 0.0, TAU, 20, Color(1.0, 0.25, 0.25, a), 2.5)
+		draw_line(c + Vector2(-6.4, -6.4), c + Vector2(6.4, 6.4), Color(1.0, 0.25, 0.25, a), 2.5)
