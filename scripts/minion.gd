@@ -1,11 +1,13 @@
 class_name Minion
 extends BaseEntity
 ## An undead servant. Obeys RTS orders only inside the Command Aura; outside it,
-## it falls into Lethargy and slowly crumbles (GDD 3.1).
+## it falls into Lethargy and slowly crumbles (GDD 3.1). Units don't hard-collide
+## with each other - crowding is smoothed by separation steering.
 
 enum State { IDLE, MOVING, ATTACKING, LETHARGY }
 
 const LETHARGY_MELEE_RANGE: float = 46.0
+const AVOID_GROUPS: PackedStringArray = ["minions", "enemies"]
 
 ## Class definition. Assign before adding to the tree (set by Main via Classes).
 @export var archetype: UnitArchetype = null
@@ -28,6 +30,7 @@ var _atk_cd: float = 0.0
 var _attack_flash: float = 0.0
 var _ordered_attack: bool = false  # true = explicit R-click order, false = auto
 var _base_color: Color = Color(0.45, 0.8, 0.45)
+var _formation_speed: float = 0.0  # >0 = move at this capped speed (slowest in group)
 
 func _ready() -> void:
 	if archetype != null:
@@ -43,6 +46,8 @@ func _ready() -> void:
 	auto_aggro_range = maxf(auto_aggro_range, attack_range * 0.9)
 	super._ready()
 	add_to_group("minions")
+	collision_layer = LAYER_MINION
+	collision_mask = LAYER_WORLD  # walls only; pass through units
 	attack_target_groups = PackedStringArray(["enemies"])
 	order_pos = global_position
 
@@ -58,33 +63,42 @@ func _physics_process(delta: float) -> void:
 
 	var in_aura: bool = global_position.distance_to(player.global_position) <= player.aura_radius
 	if not in_aura:
-		_process_lethargy(delta)
-	else:
-		if state == State.LETHARGY:
-			state = State.IDLE  # tether re-established
-		match state:
-			State.IDLE:
-				_process_idle()
-			State.MOVING:
-				_process_moving()
-			State.ATTACKING:
-				_process_attacking()
+		_process_lethargy(delta)  # sets velocity; no separation while crumbling
+		move_and_slide()
+		queue_redraw()
+		return
+
+	if state == State.LETHARGY:
+		state = State.IDLE  # tether re-established
+	match state:
+		State.IDLE:
+			_process_idle()
+		State.MOVING:
+			_process_moving()
+		State.ATTACKING:
+			_process_attacking()
+	velocity += compute_separation(AVOID_GROUPS)
+	move_and_slide()
 	queue_redraw()
 
 # --- Orders (issued by RTSCommander) ---------------------------------------
 
-func order_move(pos: Vector2) -> void:
+## Move to `pos`. If `capped_speed` > 0, march at that speed instead of the
+## minion's own (used for cohesive formations: everyone moves at the slowest).
+func order_move(pos: Vector2, capped_speed: float = 0.0) -> void:
 	order_pos = pos
 	target = null
 	_ordered_attack = false
+	_formation_speed = capped_speed
 	state = State.MOVING
 
 func order_attack(enemy: BaseEntity) -> void:
 	target = enemy
 	_ordered_attack = true  # explicit orders chase relentlessly
+	_formation_speed = 0.0
 	state = State.ATTACKING
 
-# --- State handlers --------------------------------------------------------
+# --- State handlers (set velocity only; caller runs move_and_slide) ---------
 
 func _process_idle() -> void:
 	# Auto-engage the nearest enemy that strays into range (attack-move guard).
@@ -95,35 +109,34 @@ func _process_idle() -> void:
 		state = State.ATTACKING
 		return
 	velocity = Vector2.ZERO
-	move_and_slide()
 
 func _process_moving() -> void:
 	var to_target: Vector2 = order_pos - global_position
 	if to_target.length() <= 6.0:
 		velocity = Vector2.ZERO
-		move_and_slide()
 		state = State.IDLE
+		_formation_speed = 0.0
 		return
-	velocity = to_target.normalized() * move_speed
-	move_and_slide()
+	var spd: float = _formation_speed if _formation_speed > 0.0 else move_speed
+	velocity = to_target.normalized() * spd
 
 func _process_attacking() -> void:
 	if target == null or not is_instance_valid(target) or target.is_dead:
 		target = null
+		velocity = Vector2.ZERO
 		state = State.IDLE
 		return
 	var to_target: Vector2 = target.global_position - global_position
 	# Auto-acquired targets have a leash so minions can't be baited out of the aura.
 	if not _ordered_attack and to_target.length() > auto_aggro_range * auto_leash_mult:
 		target = null
+		velocity = Vector2.ZERO
 		state = State.IDLE
 		return
 	if to_target.length() > attack_range:
 		velocity = to_target.normalized() * move_speed
-		move_and_slide()
 	else:
 		velocity = Vector2.ZERO
-		move_and_slide()
 		if _atk_cd <= 0.0:
 			perform_attack(target)
 			_atk_cd = attack_cooldown
@@ -133,7 +146,6 @@ func _process_attacking() -> void:
 func _process_lethargy(delta: float) -> void:
 	state = State.LETHARGY
 	velocity = Vector2.ZERO
-	move_and_slide()
 	take_true_damage(lethargy_dps * delta)  # crumbles over time, ignores defense
 	# Crippled: no movement and no ranged attacks, just weak flails at melee range.
 	if _atk_cd <= 0.0:

@@ -89,8 +89,10 @@ func _build_door() -> void:
 	gate.add_child(_gate_shape)
 
 	# Trigger: detects the player leaving through the opened doorway.
+	# The player has its own physics layer, so mask specifically for it.
 	var area := Area2D.new()
 	area.name = "DoorArea"
+	area.collision_mask = BaseEntity.LAYER_PLAYER
 	add_child(area)
 	var acs := CollisionShape2D.new()
 	var ashape := RectangleShape2D.new()

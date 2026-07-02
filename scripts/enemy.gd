@@ -4,6 +4,7 @@ extends BaseEntity
 ## (player or minion) and attack. On death, leaves a Corpse to be Soul Bound.
 
 const CorpseScene: PackedScene = preload("res://scenes/corpse.tscn")
+const AVOID_GROUPS: PackedStringArray = ["enemies", "minions"]
 
 ## Class definition. Assign before adding to the tree (set by Room via Classes).
 @export var archetype: UnitArchetype = null
@@ -27,6 +28,8 @@ func _ready() -> void:
 		body_color = Color(0.85, 0.3, 0.3)
 	super._ready()
 	add_to_group("enemies")
+	collision_layer = LAYER_ENEMY
+	collision_mask = LAYER_WORLD  # walls only; pass through units
 	attack_target_groups = PackedStringArray(["minions", "player"])
 
 func _physics_process(delta: float) -> void:
@@ -39,7 +42,7 @@ func _physics_process(delta: float) -> void:
 		_retarget_cd = retarget_interval
 
 	if target == null or not is_instance_valid(target):
-		velocity = Vector2.ZERO
+		velocity = compute_separation(AVOID_GROUPS)
 		move_and_slide()
 		queue_redraw()
 		return
@@ -47,15 +50,15 @@ func _physics_process(delta: float) -> void:
 	var to_target: Vector2 = target.global_position - global_position
 	if to_target.length() > attack_range:
 		velocity = to_target.normalized() * move_speed
-		move_and_slide()
 	else:
 		velocity = Vector2.ZERO
-		move_and_slide()
 		if _atk_cd <= 0.0:
 			perform_attack(target)
 			_atk_cd = attack_cooldown
 			if attack_type == UnitArchetype.AttackType.MELEE:
 				_attack_flash = 0.12
+	velocity += compute_separation(AVOID_GROUPS)
+	move_and_slide()
 	queue_redraw()
 
 func _acquire_target() -> BaseEntity:

@@ -58,13 +58,63 @@ func _finish_selection() -> void:
 				_set_selected(m, true)
 	queue_redraw()
 
+## Front-to-back battle order for formation rows (Age-of-Empires style):
+## tanks soak up front, archers stay safe at the back.
+const ROLE_ORDER: Dictionary = {"tank": 0, "warrior": 1, "mage": 2, "archer": 3}
+const FORMATION_SPACING: float = 48.0  # gap between units within a row
+const FORMATION_ROW_GAP: float = 54.0  # gap between rows (depth)
+
 func _issue_order(pos: Vector2) -> void:
 	var enemy: Enemy = _enemy_under(pos)
-	for m in _selected_minions():
-		if enemy != null:
+	var selected: Array = _selected_minions()
+	if enemy != null:
+		for m in selected:
 			m.order_attack(enemy)
-		else:
+	elif selected.size() <= 1:
+		for m in selected:
 			m.order_move(pos)
+	else:
+		_formation_move(selected, pos)
+
+## Arrange the selected minions into role-ordered rows facing the march direction.
+func _formation_move(minions: Array, pos: Vector2) -> void:
+	# Face from the group's current centre toward the destination.
+	var centroid: Vector2 = Vector2.ZERO
+	for m in minions:
+		centroid += m.global_position
+	centroid /= float(minions.size())
+	var dir: Vector2 = pos - centroid
+	dir = dir.normalized() if dir.length() > 1.0 else Vector2.UP
+	var perp: Vector2 = Vector2(-dir.y, dir.x)  # row-width axis
+
+	# Cohesive march: the whole group moves at the slowest unit's speed so the
+	# formation stays together and faster units don't outrun the tanks.
+	var group_speed: float = INF
+	for m in minions:
+		group_speed = minf(group_speed, m.move_speed)
+
+	# Bucket minions by role, one row per present role.
+	var rows: Dictionary = {}  # rank -> Array[Minion]
+	for m in minions:
+		var rank: int = ROLE_ORDER.get(m.class_id, 1)
+		if not rows.has(rank):
+			rows[rank] = []
+		rows[rank].append(m)
+	var ranks: Array = rows.keys()
+	ranks.sort()
+
+	# Front row (lowest rank = tanks) sits closest to the target; rows step back.
+	var total_depth: float = float(ranks.size() - 1) * FORMATION_ROW_GAP
+	var row_index: int = 0
+	for rank in ranks:
+		var row: Array = rows[rank]
+		var depth: float = total_depth * 0.5 - float(row_index) * FORMATION_ROW_GAP
+		var row_center: Vector2 = pos + dir * depth
+		var k: int = row.size()
+		for i in range(k):
+			var offset: float = (float(i) - float(k - 1) * 0.5) * FORMATION_SPACING
+			row[i].order_move(row_center + perp * offset, group_speed)
+		row_index += 1
 
 # --- Control groups --------------------------------------------------------
 

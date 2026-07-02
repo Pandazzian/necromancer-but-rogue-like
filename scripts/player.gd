@@ -37,6 +37,8 @@ func _ready() -> void:
 	body_color = Color(0.75, 0.85, 1.0)
 	super._ready()
 	add_to_group("player")
+	collision_layer = LAYER_PLAYER
+	collision_mask = LAYER_WORLD  # walls only; pass through units
 
 func _physics_process(delta: float) -> void:
 	_desperation_atk_cd = maxf(0.0, _desperation_atk_cd - delta)
