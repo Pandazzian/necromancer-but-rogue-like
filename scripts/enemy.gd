@@ -5,23 +5,29 @@ extends BaseEntity
 
 const CorpseScene: PackedScene = preload("res://scenes/corpse.tscn")
 
+## Class definition. Assign before adding to the tree (set by Room via Classes).
+@export var archetype: UnitArchetype = null
 @export var move_speed: float = 120.0
-@export var attack_damage: float = 7.0
-@export var attack_range: float = 40.0
-@export var attack_cooldown: float = 1.0
 @export var retarget_interval: float = 0.4
 
+var class_id: String = "warrior"
 var target: BaseEntity = null
 var _atk_cd: float = 0.0
 var _retarget_cd: float = 0.0
 var _attack_flash: float = 0.0
 
 func _ready() -> void:
-	max_hp = 30.0
-	body_radius = 14.0
-	body_color = Color(0.85, 0.3, 0.3)
+	if archetype != null:
+		apply_archetype(archetype)
+		move_speed = archetype.move_speed
+		class_id = archetype.id
+	else:
+		max_hp = 30.0
+		body_radius = 14.0
+		body_color = Color(0.85, 0.3, 0.3)
 	super._ready()
 	add_to_group("enemies")
+	attack_target_groups = PackedStringArray(["minions", "player"])
 
 func _physics_process(delta: float) -> void:
 	_atk_cd = maxf(0.0, _atk_cd - delta)
@@ -46,9 +52,10 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 		move_and_slide()
 		if _atk_cd <= 0.0:
-			target.take_damage(attack_damage, self)
+			perform_attack(target)
 			_atk_cd = attack_cooldown
-			_attack_flash = 0.12
+			if attack_type == UnitArchetype.AttackType.MELEE:
+				_attack_flash = 0.12
 	queue_redraw()
 
 func _acquire_target() -> BaseEntity:
@@ -68,6 +75,8 @@ func _acquire_target() -> BaseEntity:
 func _on_death() -> void:
 	var corpse := CorpseScene.instantiate()
 	corpse.global_position = global_position
+	corpse.source_class = class_id  # soul-binding raises a minion of this class
+	corpse.source_color = body_color  # keep the class colour (dulled) on the corpse
 	# Defer so we don't add a sibling while the tree is busy with this frame's physics.
 	get_parent().call_deferred("add_child", corpse)
 	queue_free()

@@ -5,10 +5,11 @@ extends BaseEntity
 
 enum State { IDLE, MOVING, ATTACKING, LETHARGY }
 
+const LETHARGY_MELEE_RANGE: float = 46.0
+
+## Class definition. Assign before adding to the tree (set by Main via Classes).
+@export var archetype: UnitArchetype = null
 @export var move_speed: float = 210.0
-@export var attack_damage: float = 9.0
-@export var attack_range: float = 42.0
-@export var attack_cooldown: float = 0.7
 @export var lethargy_dps: float = 6.0
 ## Idle minions auto-engage any enemy that wanders within this radius.
 @export var auto_aggro_range: float = 150.0
@@ -16,6 +17,7 @@ enum State { IDLE, MOVING, ATTACKING, LETHARGY }
 ## range (keeps it from being lured out of the aura). Ordered attacks ignore this.
 @export var auto_leash_mult: float = 1.6
 
+var class_id: String = "warrior"
 var state: int = State.IDLE
 var order_pos: Vector2
 var target: BaseEntity = null
@@ -25,13 +27,23 @@ var player: Player = null
 var _atk_cd: float = 0.0
 var _attack_flash: float = 0.0
 var _ordered_attack: bool = false  # true = explicit R-click order, false = auto
+var _base_color: Color = Color(0.45, 0.8, 0.45)
 
 func _ready() -> void:
-	max_hp = 55.0
-	body_radius = 13.0
-	body_color = Color(0.45, 0.8, 0.45)
+	if archetype != null:
+		apply_archetype(archetype)
+		move_speed = archetype.move_speed
+		class_id = archetype.id
+	else:
+		max_hp = 55.0
+		body_radius = 13.0
+		body_color = Color(0.45, 0.8, 0.45)
+	_base_color = body_color
+	# Ranged classes need to auto-engage from further out than the melee default.
+	auto_aggro_range = maxf(auto_aggro_range, attack_range * 0.9)
 	super._ready()
 	add_to_group("minions")
+	attack_target_groups = PackedStringArray(["enemies"])
 	order_pos = global_position
 
 func _physics_process(delta: float) -> void:
@@ -113,18 +125,19 @@ func _process_attacking() -> void:
 		velocity = Vector2.ZERO
 		move_and_slide()
 		if _atk_cd <= 0.0:
-			target.take_damage(attack_damage, self)
+			perform_attack(target)
 			_atk_cd = attack_cooldown
-			_attack_flash = 0.1
+			if attack_type == UnitArchetype.AttackType.MELEE:
+				_attack_flash = 0.1
 
 func _process_lethargy(delta: float) -> void:
 	state = State.LETHARGY
 	velocity = Vector2.ZERO
 	move_and_slide()
-	take_damage(lethargy_dps * delta, self)  # crumbles over time
-	# Crippled: no movement, but still swings at anything already in melee range.
+	take_true_damage(lethargy_dps * delta)  # crumbles over time, ignores defense
+	# Crippled: no movement and no ranged attacks, just weak flails at melee range.
 	if _atk_cd <= 0.0:
-		var enemy: BaseEntity = _nearest_enemy_within(attack_range)
+		var enemy: BaseEntity = _nearest_enemy_within(LETHARGY_MELEE_RANGE)
 		if enemy != null:
 			enemy.take_damage(attack_damage * 0.5, self)  # weakened
 			target = enemy
@@ -149,9 +162,9 @@ func _draw() -> void:
 	if selected:
 		draw_arc(Vector2.ZERO, body_radius + 6.0, 0.0, TAU, 32, Color(1.0, 1.0, 0.4), 2.0)
 	if state == State.LETHARGY:
-		body_color = Color(0.35, 0.5, 0.4)  # dull, drained
+		body_color = _base_color.darkened(0.4)  # dull, drained
 	else:
-		body_color = Color(0.45, 0.8, 0.45)
+		body_color = _base_color
 	_draw_body_and_health()
 	if _attack_flash > 0.0 and target != null and is_instance_valid(target):
 		draw_line(Vector2.ZERO, to_local(target.global_position), Color(1, 1, 0.5, 0.8), 2.0)

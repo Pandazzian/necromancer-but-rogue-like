@@ -34,6 +34,7 @@ func entrance_position() -> Vector2:
 func begin(enemy_count: int) -> void:
 	for i in enemy_count:
 		var e: Enemy = EnemyScene.instantiate()
+		e.archetype = Classes.enemy(Classes.random_enemy_id())  # before add_child
 		e.global_position = _random_spawn_point()
 		add_child(e)
 	_spawned = true

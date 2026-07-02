@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="UnitArchetype" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/unit_archetype.gd" id="1_arch"]
+
+[resource]
+script = ExtResource("1_arch")
+id = "warrior"
+display_name = "Skeletal Warrior"
+color = Color(0.45, 0.8, 0.45, 1)
+body_radius = 13.0
+max_hp = 55.0
+defense = 2.0
+move_speed = 210.0
+attack_damage = 9.0
+attack_range = 42.0
+attack_cooldown = 0.7
+attack_type = 0
+projectile_speed = 480.0
+aoe_radius = 0.0
