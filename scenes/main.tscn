@@ -1,0 +1,32 @@
+[gd_scene load_steps=4 format=3 uid="uid://cq0necro0main"]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="PackedScene" uid="uid://cq0necro0plyr" path="res://scenes/player.tscn" id="2_player"]
+[ext_resource type="Script" path="res://scripts/rts_commander.gd" id="3_rts"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_main")
+
+[node name="Actors" type="Node2D" parent="."]
+
+[node name="Player" parent="Actors" instance=ExtResource("2_player")]
+
+[node name="RTSCommander" type="Node2D" parent="."]
+script = ExtResource("3_rts")
+
+[node name="WaveTimer" type="Timer" parent="."]
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="Info" type="Label" parent="HUD"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 12.0
+offset_top = 8.0
+offset_right = -12.0
+offset_bottom = 96.0
+theme_override_colors/font_color = Color(0.9, 0.95, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 15
+autowrap_mode = 2
