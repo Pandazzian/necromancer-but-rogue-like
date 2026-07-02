@@ -19,6 +19,9 @@ const AVOID_GROUPS: PackedStringArray = ["minions", "enemies"]
 ## range (keeps it from being lured out of the aura). Ordered attacks ignore this.
 @export var auto_leash_mult: float = 1.6
 
+## The persistent roster data this field minion was spawned from (Main sets it).
+var instance: MinionInstance = null
+var tier: int = 1
 var class_id: String = "warrior"
 var state: int = State.IDLE
 var order_pos: Vector2
@@ -41,7 +44,11 @@ func _ready() -> void:
 		max_hp = 55.0
 		body_radius = 13.0
 		body_color = Color(0.45, 0.8, 0.45)
-	_base_color = body_color
+	if instance != null:
+		tier = instance.tier
+		class_id = instance.class_id
+	_apply_tier()  # Flesh-Stitched minions are bigger and stronger
+	_base_color = body_color.lightened(clampf(0.12 * float(tier - 1), 0.0, 0.4))
 	# Ranged classes need to auto-engage from further out than the melee default.
 	auto_aggro_range = maxf(auto_aggro_range, attack_range * 0.9)
 	super._ready()
@@ -156,6 +163,16 @@ func _process_lethargy(delta: float) -> void:
 			_atk_cd = attack_cooldown
 			_attack_flash = 0.1
 
+## Scale stats up by tier (Flesh-Stitching reward). Tier 1 is unchanged.
+func _apply_tier() -> void:
+	if tier <= 1:
+		return
+	var t: float = float(tier - 1)
+	max_hp *= 1.0 + 0.7 * t
+	attack_damage *= 1.0 + 0.6 * t
+	defense += 2.0 * t
+	body_radius += 2.0 * t
+
 func _nearest_enemy_within(radius: float) -> BaseEntity:
 	var best: BaseEntity = null
 	var best_d: float = radius
@@ -178,5 +195,9 @@ func _draw() -> void:
 	else:
 		body_color = _base_color
 	_draw_body_and_health()
+	# Tier pips: a golden dot per tier above the head.
+	if tier > 1:
+		for i in range(tier - 1):
+			draw_circle(Vector2(-6.0 + float(i) * 6.0, -body_radius - 7.0), 2.4, Color(1.0, 0.85, 0.3))
 	if _attack_flash > 0.0 and target != null and is_instance_valid(target):
 		draw_line(Vector2.ZERO, to_local(target.global_position), Color(1, 1, 0.5, 0.8), 2.0)
