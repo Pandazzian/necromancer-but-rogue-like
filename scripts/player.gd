@@ -9,7 +9,7 @@ signal state_changed(new_state: int)
 enum State { COMMANDER, CHANNELING, DESPERATION }
 
 @export var move_speed: float = 230.0
-@export var aura_radius: float = 240.0
+@export var aura_radius: float = 340.0
 @export var soul_bind_range: float = 44.0
 @export var soul_bind_time: float = 1.5
 @export var soul_bind_slow: float = 0.2  # 80% slow while channeling
