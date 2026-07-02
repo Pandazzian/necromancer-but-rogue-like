@@ -12,7 +12,7 @@ This is the playable **combat vertical slice** — the novel, risky heart of the
 - **RTS control** (GDD 3.1) — left-drag box-select, right-click move/attack, number keys `1-4` for control groups.
 - **Soul Bind capture** (GDD 3.2) — defeated enemies leave a decaying corpse; stand next to it and **hold E** to raise it as a new minion. Channeling slows you 80%, exposing you to risk.
 - **Desperation Mode** (GDD 3.3) — when your last minion dies while enemies remain, you're locked out of command and get a weak melee flail (`Space`). Kite, kill one enemy, Soul Bind it, recover.
-- **Enemy waves** — Inquisitors spawn in escalating waves and chase your minions/you.
+- **Room-by-room progression** (Hades-style) — each room is a walled chamber. Inquisitors spawn on entry; the exit door stays sealed (red) until you clear them, then opens (green). Walk through to load the next room. Enemy count scales per room, and your surviving minions carry over.
 
 ## Controls
 

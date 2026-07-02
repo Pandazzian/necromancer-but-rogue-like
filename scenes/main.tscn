@@ -14,8 +14,6 @@ script = ExtResource("1_main")
 [node name="RTSCommander" type="Node2D" parent="."]
 script = ExtResource("3_rts")
 
-[node name="WaveTimer" type="Timer" parent="."]
-
 [node name="HUD" type="CanvasLayer" parent="."]
 
 [node name="Info" type="Label" parent="HUD"]
