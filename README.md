@@ -1,65 +1,80 @@
 # Necromancer's Toll — Godot Prototype
 
 A 2D top-down Action/RTS rogue-lite built in **Godot 4.7** from *The Necromancy Tome* GDD.
+The full loop is in: **Graveyard hub → draft & loadout → room-by-room runs → die → bank Soul Essence → improve the graveyard → go again.**
 
-## What's in this slice (the combat micro-loop, GDD §3)
+## The loop
 
-This is the playable **combat vertical slice** — the novel, risky heart of the game:
+### The Graveyard (hub, GDD §5)
+You spawn in your graveyard. Walk with `WASD`, press `E` to interact:
 
-- **The Necromancer** — fragile `Player` with WASD movement. Never fights directly.
-- **Aura of Command** (GDD 3.1) — a visible radius around the player. Minions only obey inside it.
-- **Lethargy penalty** (GDD 3.1) — minions that leave the aura stop, dull, and slowly crumble.
-- **RTS control** (GDD 3.1) — left-drag box-select, right-click move/attack, number keys `1-4` for control groups.
-- **Soul Bind capture** (GDD 3.2) — defeated enemies leave a decaying corpse; stand next to it and **hold E** to raise it as a new minion. Channeling slows you 80%, exposing you to risk.
-- **Desperation Mode** (GDD 3.3) — when your last minion dies while enemies remain, you're locked out of command and get a weak melee flail (`Space`). Kite, kill one enemy, Soul Bind it, recover.
-- **Room-by-room progression** (Hades-style) — each room is a walled chamber. Inquisitors spawn on entry; the exit door stays sealed (red) until you clear them, then opens (green). Walk through to load the next room. Enemy count scales per room, and your surviving minions carry over.
-- **Unit classes** — Warrior (balanced), Tank (high HP/defense), Archer (long-range projectile), Mage (AoE) — shared by minions **and** enemies, data-driven via `UnitArchetype` resources. Soul-binding an enemy raises a minion of its class.
-- **The Crypt & Flesh-Stitching** (GDD 3.4) — captures beyond your active-party cap route into the stored Crypt. Between rooms (after walking through the door) a Crypt screen pauses the game so you can **merge two identical minions (same class + tier) into a Tier+1 version** (bigger, stronger, golden tier-pips) and swap units between the deployed party and the Crypt.
+- **Plots** — spend Soul Essence to restore Overgrown Plots, the Archer's Trench, and the Aristocrat's Mausoleum. Restored plots raise **Prestige** and attract more (and higher-tier) wanderers.
+- **The Draft** — walk up to a wandering occupant and draft it (up to 3) as your free starting party.
+- **Tome Pedestal** — cycle between the four Tomes (below).
+- **Grimoire Lectern** — unlock pages with essence, equip them within your **Arcane Capacity** (grows with account level; pages matching your Tome cost 1 less).
+- **The Iron Gate** — begin the run.
+
+### The Run (GDD §3)
+- **Aura of Command** — minions only obey inside it; outside they fall into **Lethargy** and crumble.
+- **RTS control** — drag-select, right-click orders, `1-4` control groups, role formations.
+- **Soul Bind** — hold `E` by a corpse to raise it. Party full? It goes to the Crypt. **Elite corpses cost a Soul Jar** and rise at Tier 2 (bosses Tier 3).
+- **Desperation Mode** — lose your last minion and your Tome's desperation weapon is all that's left (`Space`).
+- **Crypt screen** (`I`/`Tab`, and between rooms) — deploy/store minions, **Flesh-Stitch** duplicates into Tier+1 amalgams (inheriting both parents' grafts), and apply **Grafts** harvested from the dead.
+- **Elites & Bosses** — elites from room 3, a boss every 5th room. They guarantee graft drops.
+- **Death** — the only exit. Essence, EXP, and rooms cleared are banked to your profile.
+
+### The Four Tomes (GDD §4)
+| Tome | Passive | Aura | Desperation |
+|---|---|---|---|
+| **Stitcher's Almanac** | Party cap 2; +1 graft slot; stitched grafts +20% | Small; minions take 30% less damage | Scalpel: marks foes to take 3x from your next minion |
+| **Rotting Ledger** | Party cap +3; minions rot each second | Massive; deaths inside leave toxic slowing clouds | Corpse-rats that gnaw and stun |
+| **Sanguine Pact** | Double HP; Soul Bind costs blood, not speed; `Q` transfuses HP into minion healing | Standard circle | Rooted tether that siphons life back |
+| **Bone-Carver's Codex** | Marrow shield regrows while standing still | Wide cone toward cursor; +30% attack speed inside | Huge spectral scythe with knockback |
 
 ## Controls
 
 | Input | Action |
 |-------|--------|
-| `WASD` | Move the Necromancer |
-| Left-drag | Box-select minions (click empty = deselect) |
-| Left-click a minion | Select single minion |
-| Right-click | Selected minions Move (ground) or Attack (enemy) |
-| `1`–`4` | Recall control group |
-| `Ctrl`+`1`–`4` | Assign current selection to a group |
-| Hold `E` | Cast Soul Bind on the nearest corpse in range |
-| `Space` | Desperation attack (only when you have no minions) |
+| `WASD` | Move (hub and run) |
+| `E` | Interact (hub) / hold to Soul Bind (run) |
+| Left-drag / click | Select minions |
+| Right-click | Move / attack order |
+| `1`–`4` (+`Ctrl`) | Control groups |
+| `I` / `Tab` | Crypt: inventory, grafting, stitching, deploy/store |
+| `Q` | Transfusion (Sanguine Pact only) |
+| `Space` | Desperation weapon (when the last minion falls) |
+| `Enter` | Return to the Graveyard after death |
 
 ## Running
 
-Open the project in Godot 4.7 and press **F5**, or from a terminal:
+Open the project in Godot 4.7 and press **F5** (main scene: `scenes/hub.tscn`).
+Run `scenes/main.tscn` directly to skip the hub with a default loadout.
+
+Headless self-test of the meta-loop logic:
 
 ```
-"<path>/Godot_v4.7-stable_win64.exe" --path . 
+godot --headless scenes/dev_selftest.tscn
 ```
 
-The main scene is `scenes/main.tscn`.
+## Architecture
 
-## Architecture — GDD (Unity) → Godot mapping
+| System | Where |
+|---|---|
+| `BaseEntity` (HP/damage/bleed/marks) | `scripts/base_entity.gd` |
+| Player + Tome integration | `scripts/player.gd`, `scripts/tome_data.gd`, `scripts/tomes.gd` |
+| Minions + instances (name/tier/grafts) | `scripts/minion.gd`, `scripts/minion_instance.gd` |
+| Per-player Inventory (party/crypt/grafts, stitching) | `scripts/inventory.gd`, UI in `scripts/inventory_ui.gd` |
+| Grafts registry + drops | `scripts/graft_item.gd`, `scripts/grafts.gd`, `scripts/graft_pickup.gd` |
+| Grimoire pages + loadout | `scripts/grimoire_page.gd`, `scripts/grimoire.gd`, `scripts/grimoire_ui.gd` |
+| Save/load (`PlayerProfileManager`) | `scripts/profile.gd` → `user://profile.json` |
+| Hub ↔ run bridge | `scripts/run_state.gd` |
+| The Graveyard hub | `scripts/hub.gd`, `scenes/hub.tscn` |
+| Rooms, elites, bosses | `scripts/room.gd`, `scripts/enemy.gd` |
 
-The GDD's §6 tech section is written in Unity terms. Godot equivalents used here:
+Everything is data-first and id-keyed (tomes, grafts, pages, minion instances serialize to dicts) with per-player, owner-tagged inventories — groundwork for the planned co-op multiplayer; no netcode yet.
 
-| GDD / Unity term | Godot equivalent (this project) |
-|------------------|----------------------------------|
-| `BaseEntity` (abstract) | `scripts/base_entity.gd` — `CharacterBody2D` base with HP/damage/death signals |
-| `PlayerController` | `scripts/player.gd` (`Player`) |
-| `MinionController` + `NavMeshAgent` | `scripts/minion.gd` — simple steering (no NavMesh yet) |
-| `EnemyController` | `scripts/enemy.gd` |
-| `RTSCommander` | `scripts/rts_commander.gd` |
-| `SphereCollider` Command Aura | distance check vs `Player.aura_radius` |
-| `ScriptableObject` (TomeData, MinionData, GraftItem…) | Godot **`Resource`** classes (not yet built — see below) |
-| Prefabs | `PackedScene` (`.tscn`) |
-| `Vector3` | `Vector2` (top-down 2D) |
+## Not yet built
 
-## Not yet built (next steps toward the full GDD)
-
-- **Data resources**: `TomeData`, `MinionData`, `GraftItem`, `GrimoirePage` as Godot `Resource`s (GDD 6.1).
-- **The 4 Tomes/Classes** (GDD §4) — swap aura shape/rules/desperation per class.
-- **Crypt management & Flesh-Stitching/Grafting** (GDD 3.4–3.5) — between-room surgery UI.
-- **Meta hub**: the Graveyard, Prestige, the Draft, Grimoire loadout & Arcane Capacity (GDD §5).
-- **Save/Load** (`PlayerProfileManager` singleton, GDD 6.2).
-- **Soul Jars / Elite captures, Grafts as battlefield loot.**
+- Multiplayer netcode (architecture is per-player/serializable and ready for it).
+- Meta-hub polish: mausoleum visuals, more plot types, graveyard decorations.
+- More graft/page/tome content; balance passes.

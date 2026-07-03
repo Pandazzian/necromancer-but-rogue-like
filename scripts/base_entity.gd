@@ -36,8 +36,26 @@ var attack_target_groups: PackedStringArray = PackedStringArray()
 var current_hp: float
 var is_dead: bool = false
 
+## Bleed DoT (Serrated Bone-Blades etc.): true damage per second while active.
+var _bleed_dps: float = 0.0
+var _bleed_time: float = 0.0
+## Surgical Strike mark: the next hit from a Minion is multiplied by this.
+var marked_mult: float = 1.0
+
 func _ready() -> void:
 	current_hp = max_hp
+
+## Status effects tick in _process so every subclass gets them for free
+## (subclasses use _physics_process for movement and don't override this).
+func _process(delta: float) -> void:
+	if _bleed_time > 0.0 and not is_dead:
+		_bleed_time -= delta
+		take_true_damage(_bleed_dps * delta)
+
+## Open a wound: `dps` true damage for `duration` seconds (refreshes, no stack).
+func apply_bleed(dps: float, duration: float) -> void:
+	_bleed_dps = maxf(_bleed_dps, dps)
+	_bleed_time = maxf(_bleed_time, duration)
 
 ## Configure combat/appearance from a class definition (GDD 6.1 MinionData).
 func apply_archetype(a: UnitArchetype) -> void:
@@ -63,11 +81,16 @@ func perform_attack(target: BaseEntity) -> void:
 	var d: Vector2 = target.global_position - global_position
 	d = d.normalized() if d.length() > 0.001 else Vector2.RIGHT
 	Projectile.spawn(get_parent(), global_position, d, attack_damage,
-		attack_target_groups, projectile_speed, aoe_radius, body_color, attack_range + 140.0)
+		attack_target_groups, projectile_speed, aoe_radius, body_color, attack_range + 140.0, self)
 
-func take_damage(amount: float, _source: Node = null) -> void:
+func take_damage(amount: float, source: Node = null) -> void:
 	if is_dead:
 		return
+	# Surgical Strike (GDD 4.1): a marked target takes multiplied damage from
+	# the next minion that strikes it, then the mark is spent.
+	if marked_mult > 1.0 and source is Minion:
+		amount *= marked_mult
+		marked_mult = 1.0
 	var dealt: float = maxf(1.0, amount - defense)  # always chip at least 1
 	current_hp = maxf(0.0, current_hp - dealt)
 	health_changed.emit(current_hp, max_hp)

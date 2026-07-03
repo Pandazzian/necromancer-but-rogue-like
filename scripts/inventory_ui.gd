@@ -10,6 +10,9 @@ extends Control
 ## the shared world keeps running while this player's Necromancer holds still.
 
 signal continue_pressed
+## Emitted when the active party changes (deploy/store/stitch) so Main can sync
+## the field immediately instead of waiting for the next room.
+signal roster_changed
 
 var player: Player = null
 
@@ -282,21 +285,25 @@ func _on_deploy() -> void:
 	if _selected_minion == null or not player.inventory.crypt.has(_selected_minion):
 		_status.text = "Select a Crypt minion to deploy into the active party."
 		return
-	if not player.inventory.deploy(_selected_minion):
+	var inst: MinionInstance = _selected_minion
+	if not player.inventory.deploy(inst):
 		_status.text = "Active party is full (%d)." % player.inventory.party_cap
 		return
-	_status.text = "Deployed %s. Takes the field next room." % _selected_minion.unit_name
 	_selected_minion = null
+	roster_changed.emit()  # spawn it on the field now
+	_status.text = "Deployed %s to the field." % inst.unit_name
 
 func _on_store() -> void:
 	if _selected_minion == null or not player.inventory.party.has(_selected_minion):
 		_status.text = "Select an active-party minion to bench in the Crypt."
 		return
-	if not player.inventory.store(_selected_minion):
+	var inst: MinionInstance = _selected_minion
+	if not player.inventory.store(inst):
 		_status.text = "Crypt is full (%d)." % player.inventory.reserve_cap
 		return
-	_status.text = "Stored %s in the Crypt." % _selected_minion.unit_name
 	_selected_minion = null
+	roster_changed.emit()  # pull it off the field now
+	_status.text = "Stored %s in the Crypt." % inst.unit_name
 
 func _on_stitch() -> void:
 	if _selected_minion == null:
@@ -308,8 +315,9 @@ func _on_stitch() -> void:
 		return
 	var merged: MinionInstance = player.inventory.stitch(_selected_minion, partner)
 	_selected_minion = null
+	roster_changed.emit()  # remove the fused pair from the field now
 	if merged != null:
-		_status.text = "Stitched into a Tier %d %s (inherits both parents' grafts)." % [
+		_status.text = "Stitched into a Tier %d %s (inherits both parents' grafts). It waits in the Crypt." % [
 			merged.tier, merged.class_id.capitalize()]
 
 func _node_for(inst: MinionInstance) -> Minion:

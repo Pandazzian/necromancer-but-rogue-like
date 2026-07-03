@@ -74,7 +74,15 @@ func _physics_process(delta: float) -> void:
 		queue_redraw()
 		return
 
-	var in_aura: bool = global_position.distance_to(player.global_position) <= player.aura_radius
+	# Rapid Decay (Rotting Ledger 4.2): the horde is always rotting away.
+	var decay: float = player.tome.minion_decay_pct if player.tome != null else 0.0
+	if decay > 0.0:
+		take_true_damage(max_hp * decay * delta)
+		if is_dead:
+			return
+
+	# Aura membership is tome-shaped (circle or cone) - the player decides.
+	var in_aura: bool = player.is_in_aura(global_position)
 	if not in_aura:
 		_process_lethargy(delta)  # sets velocity; no separation while crumbling
 		move_and_slide()
@@ -152,9 +160,18 @@ func _process_attacking() -> void:
 		velocity = Vector2.ZERO
 		if _atk_cd <= 0.0:
 			perform_attack(target)
-			_atk_cd = attack_cooldown
+			_atk_cd = _effective_cooldown()
 			if attack_type == UnitArchetype.AttackType.MELEE:
 				_attack_flash = 0.1
+
+## Attack cooldown after aura buffs: the Bone-Carver's cone hastens everyone
+## fighting inside it (GDD 4.4 Directional Command).
+func _effective_cooldown() -> float:
+	var cd: float = attack_cooldown
+	if player != null and is_instance_valid(player) and player.tome != null \
+			and player.tome.aura_attack_speed > 0.0 and player.is_in_aura(global_position):
+		cd /= 1.0 + player.tome.aura_attack_speed
+	return cd
 
 func _process_lethargy(delta: float) -> void:
 	state = State.LETHARGY
@@ -206,7 +223,54 @@ func _nearest_enemy_within(radius: float) -> BaseEntity:
 				best = e
 	return best
 
+# --- Combat hooks (grafts + Grimoire pages) ----------------------------------
+
+## Melee attacks gain crits (Ruthless Command), graft bleeds and life-steal.
+## Ranged/AoE classes defer to the base projectile path (source-credited).
+func perform_attack(atk_target: BaseEntity) -> void:
+	if atk_target == null or not is_instance_valid(atk_target):
+		return
+	if attack_type != UnitArchetype.AttackType.MELEE:
+		super.perform_attack(atk_target)
+		return
+	var dmg: float = attack_damage
+	if RunState.page_active("ruthless_command") and randf() < 0.15:
+		dmg *= 2.0  # critical strike
+	atk_target.take_damage(dmg, self)
+	var bleed: float = instance.bleed_dps()
+	if bleed > 0.0:
+		atk_target.apply_bleed(bleed, 3.0)  # Serrated Bone-Blades
+	on_damage_dealt(dmg)
+
+## Credited whenever this minion deals damage (melee or via its projectiles).
+func on_damage_dealt(dmg: float) -> void:
+	if RunState.page_active("vampiric_aura"):
+		heal(dmg * 0.2)
+
+## Incoming damage: Stitcher aura shields the pack; Mirror-Glass Scales bite back.
+func take_damage(amount: float, source: Node = null) -> void:
+	if player != null and is_instance_valid(player) and player.tome != null \
+			and player.tome.aura_damage_reduction > 0.0 and player.is_in_aura(global_position):
+		amount *= 1.0 - player.tome.aura_damage_reduction
+	var refl: float = instance.reflect_pct() if instance != null else 0.0
+	if refl > 0.0 and source is Enemy and is_instance_valid(source):
+		(source as Enemy).take_true_damage(amount * refl)
+	super.take_damage(amount, source)
+
 func _on_death() -> void:
+	# Volatile Bile Gland / Explosive Decay: the dead repay their debts loudly.
+	var boom: float = instance.death_explosion() if instance != null else 0.0
+	if RunState.page_active("explosive_decay"):
+		boom += 14.0
+	if boom > 0.0:
+		for e in get_tree().get_nodes_in_group("enemies"):
+			if e is BaseEntity and not (e as BaseEntity).is_dead \
+					and global_position.distance_to((e as BaseEntity).global_position) <= 80.0:
+				(e as BaseEntity).take_damage(boom, null)
+	# Rotting Ledger (4.2): death inside the aura fumes into a slowing miasma.
+	if player != null and is_instance_valid(player) and player.tome != null \
+			and player.tome.death_clouds and player.is_in_aura(global_position):
+		ToxicCloud.spawn(get_parent(), global_position)
 	queue_free()
 
 # --- Rendering -------------------------------------------------------------

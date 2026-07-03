@@ -7,6 +7,10 @@ extends Node2D
 var source_class: String = "warrior"
 ## The enemy's class colour, used (dulled) to render the corpse.
 var source_color: Color = Color(0.6, 0.6, 0.6)
+## Elite remains demand a Soul Jar charge to capture (GDD 3.2).
+var source_elite: bool = false
+## Tier of the minion this corpse raises into (elites 2, bosses 3).
+var source_tier: int = 1
 
 var _t: float = 0.0
 
@@ -30,3 +34,6 @@ func _draw() -> void:
 	var pulse: float = 0.5 + 0.5 * sin(_t * 3.0)
 	var ring := Color(source_color.r, source_color.g, source_color.b, 0.22 + 0.33 * pulse)
 	draw_arc(Vector2.ZERO, 15.0 + 2.0 * pulse, 0.0, TAU, 28, ring, 2.0)
+	# Elite remains glint gold: worth a Soul Jar.
+	if source_elite:
+		draw_arc(Vector2.ZERO, 20.0 + 2.0 * pulse, 0.0, TAU, 28, Color(1.0, 0.8, 0.25, 0.5 + 0.3 * pulse), 2.0)

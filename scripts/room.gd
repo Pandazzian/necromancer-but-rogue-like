@@ -30,13 +30,24 @@ func _ready() -> void:
 func entrance_position() -> Vector2:
 	return global_position + Vector2(-interior_size.x * 0.5 + 80.0, 0.0)
 
-## Spawn the encounter. Call once, after the room is in the tree.
-func begin(enemy_count: int) -> void:
+## Spawn the encounter. Call once, after the room is in the tree. Elites are
+## tougher Inquisitors that guarantee graft drops (GDD 3.5); a boss room fields
+## one massive commander in place of two grunts.
+func begin(enemy_count: int, elite_count: int = 0, with_boss: bool = false) -> void:
+	if with_boss:
+		enemy_count = maxi(1, enemy_count - 2)
 	for i in enemy_count:
 		var e: Enemy = EnemyScene.instantiate()
 		e.archetype = Classes.enemy(Classes.random_enemy_id())  # before add_child
+		e.is_elite = i < elite_count
 		e.global_position = _random_spawn_point()
 		add_child(e)
+	if with_boss:
+		var b: Enemy = EnemyScene.instantiate()
+		b.archetype = Classes.enemy("tank")
+		b.is_boss = true
+		b.global_position = global_position + Vector2(_half().x * 0.55, 0.0)
+		add_child(b)
 	_spawned = true
 
 func _process(_delta: float) -> void:
