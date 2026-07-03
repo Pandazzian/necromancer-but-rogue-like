@@ -3,6 +3,10 @@ extends Node2D
 ## Left-click/drag box-selects minions. Right-click issues Move or Attack orders.
 ## Number keys 1-4 recall control groups; Ctrl+1-4 assign the current selection.
 
+## Emitted whenever the set of selected minions changes (drag, click, group
+## recall, or deselect). Carries the current selection so UI can react.
+signal selection_changed(selected: Array)
+
 @export var min_drag: float = 6.0  # px before a click becomes a drag-select
 
 var player: Player = null
@@ -14,6 +18,8 @@ var _control_groups: Dictionary = {}  # int -> Array[Minion]
 
 func _unhandled_input(event: InputEvent) -> void:
 	if player == null or not is_instance_valid(player) or player.state == Player.State.DESPERATION:
+		return
+	if player.input_locked:  # typing / in a menu - don't drive the army
 		return
 
 	if event is InputEventMouseButton:
@@ -57,6 +63,7 @@ func _finish_selection() -> void:
 			if rect.has_point(m.global_position):
 				_set_selected(m, true)
 	queue_redraw()
+	selection_changed.emit(_selected_minions())
 
 ## Front-to-back battle order for formation rows (Age-of-Empires style):
 ## tanks soak up front, archers stay safe at the back.
@@ -129,6 +136,7 @@ func _recall_group(n: int) -> void:
 		if is_instance_valid(m) and not m.is_dead:
 			_set_selected(m, true)
 	queue_redraw()
+	selection_changed.emit(_selected_minions())
 
 # --- Helpers ---------------------------------------------------------------
 

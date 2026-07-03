@@ -15,6 +15,14 @@ enum State { COMMANDER, CHANNELING, DESPERATION }
 @export var soul_bind_slow: float = 0.2  # 80% slow while channeling
 
 var state: int = State.COMMANDER
+## Set by UI (rename field / inventory screen) to freeze the Necromancer so
+## WASD/E don't leak into gameplay behind an open menu or focused text box.
+var input_locked: bool = false
+
+## Networking identity - which peer controls this Necromancer (1 = host/local).
+@export var owner_peer_id: int = 1
+## This player's own graft stash + minion roster (GDD 3.4). Per-player by design.
+var inventory: Inventory = null
 
 var _bind_timer: float = 0.0
 var _bind_target: Node2D = null
@@ -24,6 +32,8 @@ func _ready() -> void:
 	max_hp = 40.0  # fragile by design
 	body_radius = 15.0
 	body_color = Color(0.75, 0.85, 1.0)
+	inventory = Inventory.new()
+	inventory.owner_peer_id = owner_peer_id
 	super._ready()
 	add_to_group("player")
 	collision_layer = LAYER_PLAYER
@@ -31,6 +41,12 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_desperation_atk_cd = maxf(0.0, _desperation_atk_cd - delta)
+	# Frozen while the player is in a menu / typing (rename, inventory).
+	if input_locked:
+		velocity = Vector2.ZERO
+		move_and_slide()
+		queue_redraw()
+		return
 	match state:
 		State.COMMANDER:
 			_process_commander(delta)

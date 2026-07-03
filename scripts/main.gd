@@ -1,8 +1,9 @@
 extends Node2D
 ## Run controller (Hades-style). The player clears one walled Room at a time;
-## clearing all enemies opens the exit door. Walking through opens the Crypt
-## management screen (Flesh-Stitching / swaps), then loads the next room.
-## The roster persists in the Crypt autoload; field minions are spawned from it.
+## clearing all enemies opens the exit door. Walking through opens the Crypt /
+## Inventory management screen (Flesh-Stitching, swaps, grafting), then loads the
+## next room. The roster lives in the player's per-player Inventory; field minions
+## are spawned from it each room.
 
 const MinionScene: PackedScene = preload("res://scenes/minion.tscn")
 const RoomScene: PackedScene = preload("res://scenes/room.tscn")
@@ -12,31 +13,58 @@ const RoomScene: PackedScene = preload("res://scenes/room.tscn")
 @onready var player: Player = $Actors/Player
 @onready var actors: Node2D = $Actors
 @onready var commander: Node2D = $RTSCommander
+@onready var hud: CanvasLayer = $HUD
 @onready var info_label: Label = $HUD/Info
-@onready var crypt_screen: CanvasLayer = $CryptScreen
 
+var _minion_panel: MinionPanel = null
+var _inventory_ui: InventoryUI = null
 var _room_number: int = 0
 var _current_room: Room = null
 var _transitioning: bool = false
 var _was_desperate: bool = false
+
+## How close the Necromancer must be to hoover up a dropped graft.
+const PICKUP_RANGE: float = 32.0
 
 func _ready() -> void:
 	randomize()
 	commander.player = player
 	player.soul_bind_completed.connect(_on_soul_bind_completed)
 	player.died.connect(_on_player_died)
-	crypt_screen.continue_pressed.connect(_advance_room)
+
+	# Mouse-driven selected-minion card (name / stats / rename).
+	_minion_panel = MinionPanel.new()
+	_minion_panel.player = player
+	hud.add_child(_minion_panel)
+	commander.selection_changed.connect(_on_selection_changed)
+
+	# Consolidated Inventory / Crypt / grafting screen. Toggle mid-combat with
+	# I / Tab; it also serves as the between-rooms management step.
+	_inventory_ui = InventoryUI.new()
+	_inventory_ui.player = player
+	hud.add_child(_inventory_ui)
+	_inventory_ui.continue_pressed.connect(_advance_room)
 
 	# Fresh run roster.
-	Crypt.reset_run()
+	player.inventory.reset_run()
 	for cid in ["warrior", "archer", "tank"]:
-		Crypt.add_to_party(cid)
+		player.inventory.add_to_party(MinionInstance.create(cid))
 
 	_start_room(1)
 
 func _process(_delta: float) -> void:
 	_update_desperation()
+	_collect_pickups()
 	_update_hud()
+
+## The Necromancer harvests any graft it walks over into its own inventory.
+func _collect_pickups() -> void:
+	if player.is_dead:
+		return
+	for p in get_tree().get_nodes_in_group("graft_pickups"):
+		if p is GraftPickup and player.global_position.distance_to(p.global_position) <= PICKUP_RANGE:
+			player.inventory.add_graft(p.graft)
+			p.queue_free()
 
 # --- Room flow -------------------------------------------------------------
 
@@ -67,8 +95,8 @@ func _on_room_exited() -> void:
 	if _transitioning:
 		return
 	_transitioning = true
-	# Between rooms: pause for Crypt management (deferred - we're in a physics cb).
-	crypt_screen.call_deferred("open")
+	# Between rooms: open the management screen (deferred - we're in a physics cb).
+	_inventory_ui.call_deferred("open_between_rooms")
 
 func _advance_room() -> void:
 	if is_instance_valid(_current_room):
@@ -80,9 +108,9 @@ func _deploy_party(center: Vector2) -> void:
 	for m in get_tree().get_nodes_in_group("minions"):
 		m.remove_from_group("minions")  # so counts are correct this frame
 		m.queue_free()
-	var count: int = maxi(1, Crypt.party.size())
+	var count: int = maxi(1, player.inventory.party.size())
 	var i: int = 0
-	for inst in Crypt.party:
+	for inst in player.inventory.party:
 		var ang: float = TAU * float(i) / float(count)
 		var pos: Vector2 = center + Vector2(cos(ang), sin(ang)) * 70.0
 		_spawn_minion(inst, pos)
@@ -97,9 +125,10 @@ func _reset_camera() -> void:
 
 func _spawn_minion(inst: MinionInstance, pos: Vector2) -> Minion:
 	var m: Minion = MinionScene.instantiate()
-	# Assign data before add_child so _ready() configures class + tier.
+	# Assign data before add_child so _ready() configures class + tier + grafts.
 	m.instance = inst
 	m.archetype = Classes.minion(inst.class_id)
+	m.owner_peer_id = player.owner_peer_id
 	m.global_position = pos
 	m.player = player
 	m.died.connect(_on_minion_died)
@@ -107,8 +136,9 @@ func _spawn_minion(inst: MinionInstance, pos: Vector2) -> Minion:
 	return m
 
 func _on_minion_died(entity: BaseEntity) -> void:
+	# Its grafts die with it (GDD 3.5 high stakes): drop the instance from the roster.
 	if entity is Minion and (entity as Minion).instance != null:
-		Crypt.remove((entity as Minion).instance)
+		player.inventory.remove((entity as Minion).instance)
 
 func _on_soul_bind_completed(corpse: Node2D) -> void:
 	if corpse == null or not is_instance_valid(corpse):
@@ -116,7 +146,7 @@ func _on_soul_bind_completed(corpse: Node2D) -> void:
 	# Raise a minion of the same class as the enemy that left this corpse. It
 	# joins the active party if there's room, else it's stored in the Crypt.
 	var cid: String = corpse.source_class if "source_class" in corpse else "warrior"
-	var result: Dictionary = Crypt.capture(cid)
+	var result: Dictionary = player.inventory.capture(cid)
 	if result.dest == "party":
 		_spawn_minion(result.inst, corpse.global_position)
 	corpse.queue_free()
@@ -135,6 +165,12 @@ func _update_desperation() -> void:
 		player.exit_desperation()
 	_was_desperate = should_be_desperate
 
+func _on_selection_changed(selected: Array) -> void:
+	if selected.size() == 1 and selected[0] is Minion:
+		_minion_panel.show_for(selected[0])
+	else:
+		_minion_panel.hide_panel()
+
 # --- HUD -------------------------------------------------------------------
 
 func _update_hud() -> void:
@@ -142,13 +178,15 @@ func _update_hud() -> void:
 	var minions: int = get_tree().get_nodes_in_group("minions").size()
 	var enemies: int = get_tree().get_nodes_in_group("enemies").size()
 	var corpses: int = get_tree().get_nodes_in_group("corpses").size()
+	var inv: Inventory = player.inventory
 	var lines := PackedStringArray()
 	if player.is_dead:
 		lines.append("YOU HAVE BEEN PURGED.  (restart: Ctrl+R in editor)")
 	else:
 		lines.append("Room %d    State: %s    HP: %d/%d" % [_room_number, state_names[player.state], roundi(player.current_hp), roundi(player.max_hp)])
-	lines.append("Deployed: %d/%d    Crypt: %d/%d    Enemies: %d    Corpses: %d" % [minions, Crypt.party_cap, Crypt.reserve.size(), Crypt.reserve_cap, enemies, corpses])
-	lines.append("WASD move | L-drag select | R-click move/attack | hold E near corpse: Soul Bind | 1-4 groups")
+	lines.append("Deployed: %d/%d    Crypt: %d/%d    Grafts: %d    Enemies: %d    Corpses: %d" % [
+		minions, inv.party_cap, inv.crypt.size(), inv.reserve_cap, inv.grafts.size(), enemies, corpses])
+	lines.append("WASD | L-drag select | click ONE minion to name it | R-click order | hold E: Soul Bind | I / Tab: Inventory & Grafting")
 	if not player.is_dead:
 		if enemies == 0:
 			lines.append(">> ROOM CLEARED! Raise any corpses you want, then walk through the green doorway. >>")

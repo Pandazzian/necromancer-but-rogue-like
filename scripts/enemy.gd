@@ -10,6 +10,9 @@ const AVOID_GROUPS: PackedStringArray = ["enemies", "minions"]
 @export var archetype: UnitArchetype = null
 @export var move_speed: float = 120.0
 @export var retarget_interval: float = 0.4
+## Chance to drop a harvestable graft on death (GDD 3.5). Elites guarantee one.
+@export var graft_drop_chance: float = 0.2
+@export var is_elite: bool = false
 
 var class_id: String = "warrior"
 var target: BaseEntity = null
@@ -82,7 +85,18 @@ func _on_death() -> void:
 	corpse.source_color = body_color  # keep the class colour (dulled) on the corpse
 	# Defer so we don't add a sibling while the tree is busy with this frame's physics.
 	get_parent().call_deferred("add_child", corpse)
+	_maybe_drop_graft()
 	queue_free()
+
+## Elites always drop; regular Inquisitors drop by chance (GDD 3.5 harvesting).
+func _maybe_drop_graft() -> void:
+	if not is_elite and randf() > graft_drop_chance:
+		return
+	var pickup := GraftPickup.new()
+	pickup.graft = Grafts.random_drop()
+	# Nudge the gem clear of the corpse so both are grabbable.
+	pickup.global_position = global_position + Vector2(randf_range(-14, 14), randf_range(-24, -12))
+	get_parent().call_deferred("add_child", pickup)
 
 func _draw() -> void:
 	_draw_body_and_health()

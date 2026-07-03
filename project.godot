@@ -19,7 +19,8 @@ config/run/main_scene="res://scenes/main.tscn"
 [autoload]
 
 Classes="*res://scripts/classes.gd"
-Crypt="*res://scripts/crypt.gd"
+Names="*res://scripts/minion_names.gd"
+Grafts="*res://scripts/grafts.gd"
 
 [display]
 

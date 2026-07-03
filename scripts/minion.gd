@@ -2,14 +2,15 @@ class_name Minion
 extends BaseEntity
 ## An undead servant. Obeys RTS orders only inside the Command Aura; outside it,
 ## it falls into Lethargy and slowly crumbles (GDD 3.1). Units don't hard-collide
-## with each other - crowding is smoothed by separation steering.
+## with each other - crowding is smoothed by separation steering. Its identity,
+## tier and grafts live in a persistent MinionInstance held by the owning player.
 
 enum State { IDLE, MOVING, ATTACKING, LETHARGY }
 
 const LETHARGY_MELEE_RANGE: float = 46.0
 const AVOID_GROUPS: PackedStringArray = ["minions", "enemies"]
 
-## Class definition. Assign before adding to the tree (set by Main via Classes).
+## Class definition. Optional - derived from `instance.class_id` when not set.
 @export var archetype: UnitArchetype = null
 @export var move_speed: float = 210.0
 @export var lethargy_dps: float = 6.0
@@ -20,7 +21,10 @@ const AVOID_GROUPS: PackedStringArray = ["minions", "enemies"]
 @export var auto_leash_mult: float = 1.6
 
 ## The persistent roster data this field minion was spawned from (Main sets it).
+## If null one is created, so the minion always has identity/tier/grafts.
 var instance: MinionInstance = null
+## Which peer commands this minion (inherited from its owning Necromancer).
+var owner_peer_id: int = 1
 var tier: int = 1
 var class_id: String = "warrior"
 var state: int = State.IDLE
@@ -36,22 +40,24 @@ var _base_color: Color = Color(0.45, 0.8, 0.45)
 var _formation_speed: float = 0.0  # >0 = move at this capped speed (slowest in group)
 
 func _ready() -> void:
-	if archetype != null:
-		apply_archetype(archetype)
-		move_speed = archetype.move_speed
-		class_id = archetype.id
-	else:
-		max_hp = 55.0
-		body_radius = 13.0
-		body_color = Color(0.45, 0.8, 0.45)
-	if instance != null:
-		tier = instance.tier
-		class_id = instance.class_id
-	_apply_tier()  # Flesh-Stitched minions are bigger and stronger
+	# Ensure we always have persistent data (legacy callers may set only archetype).
+	if instance == null:
+		var cid: String = archetype.id if archetype != null else "warrior"
+		instance = MinionInstance.create(cid)
+	class_id = instance.class_id
+	tier = instance.tier
+	if archetype == null:
+		archetype = Classes.minion(instance.class_id)
+
+	apply_archetype(archetype)   # base colour, ranges, attack type
+	_apply_instance_stats()      # tier + graft scaling on top of the base
 	_base_color = body_color.lightened(clampf(0.12 * float(tier - 1), 0.0, 0.4))
 	# Ranged classes need to auto-engage from further out than the melee default.
 	auto_aggro_range = maxf(auto_aggro_range, attack_range * 0.9)
-	super._ready()
+	super._ready()  # sets current_hp = max_hp
+	# Restore any wounds carried over from a previous room.
+	if instance.stored_hp >= 0.0:
+		current_hp = clampf(instance.stored_hp, 1.0, max_hp)
 	add_to_group("minions")
 	collision_layer = LAYER_MINION
 	collision_mask = LAYER_WORLD  # walls only; pass through units
@@ -163,15 +169,31 @@ func _process_lethargy(delta: float) -> void:
 			_atk_cd = attack_cooldown
 			_attack_flash = 0.1
 
-## Scale stats up by tier (Flesh-Stitching reward). Tier 1 is unchanged.
-func _apply_tier() -> void:
-	if tier <= 1:
-		return
-	var t: float = float(tier - 1)
-	max_hp *= 1.0 + 0.7 * t
-	attack_damage *= 1.0 + 0.6 * t
-	defense += 2.0 * t
-	body_radius += 2.0 * t
+# --- Stats -----------------------------------------------------------------
+
+## Recompute combat stats from the instance's tier and equipped grafts, layered
+## on top of the base archetype (which apply_archetype() must have set first).
+## Tier scaling is the Flesh-Stitching reward; graft bonuses add on top.
+func _apply_instance_stats() -> void:
+	var t: float = float(instance.tier - 1)
+	max_hp = archetype.max_hp * (1.0 + 0.7 * t) + instance.hp_bonus()
+	attack_damage = archetype.attack_damage * (1.0 + 0.6 * t) + instance.damage_bonus()
+	defense = archetype.defense + 2.0 * t + instance.defense_bonus()
+	attack_cooldown = archetype.attack_cooldown * instance.attack_speed_mult()
+	move_speed = archetype.move_speed * instance.move_speed_mult()
+	body_radius = archetype.body_radius + 2.0 * t
+
+## Re-apply stats after a graft is added in the field (heals by any new max HP so
+## a defensive graft takes effect immediately). Called by the inventory screen.
+func refresh_from_instance() -> void:
+	var old_max: float = max_hp
+	_apply_instance_stats()
+	var delta: float = max_hp - old_max
+	if delta > 0.0:
+		current_hp = minf(max_hp, current_hp + delta)
+	else:
+		current_hp = minf(current_hp, max_hp)
+	queue_redraw()
 
 func _nearest_enemy_within(radius: float) -> BaseEntity:
 	var best: BaseEntity = null
@@ -187,6 +209,8 @@ func _nearest_enemy_within(radius: float) -> BaseEntity:
 func _on_death() -> void:
 	queue_free()
 
+# --- Rendering -------------------------------------------------------------
+
 func _draw() -> void:
 	if selected:
 		draw_arc(Vector2.ZERO, body_radius + 6.0, 0.0, TAU, 32, Color(1.0, 1.0, 0.4), 2.0)
@@ -195,9 +219,41 @@ func _draw() -> void:
 	else:
 		body_color = _base_color
 	_draw_body_and_health()
-	# Tier pips: a golden dot per tier above the head.
-	if tier > 1:
-		for i in range(tier - 1):
-			draw_circle(Vector2(-6.0 + float(i) * 6.0, -body_radius - 7.0), 2.4, Color(1.0, 0.85, 0.3))
+	_draw_tier_pips()
+	_draw_name()
+	_draw_graft_pips()
 	if _attack_flash > 0.0 and target != null and is_instance_valid(target):
 		draw_line(Vector2.ZERO, to_local(target.global_position), Color(1, 1, 0.5, 0.8), 2.0)
+
+## Golden dots above the head, one per tier beyond the first (Flesh-Stitching).
+func _draw_tier_pips() -> void:
+	if tier <= 1:
+		return
+	for i in range(tier - 1):
+		draw_circle(Vector2(-6.0 + float(i) * 6.0, -body_radius - 7.0), 2.4, Color(1.0, 0.85, 0.3))
+
+## Small coloured dots beneath the body, one per equipped graft, so grafted
+## (valuable) minions are recognisable at a glance on the field.
+func _draw_graft_pips() -> void:
+	if instance == null or instance.grafts.is_empty():
+		return
+	var n: int = instance.grafts.size()
+	var spacing: float = 7.0
+	var y: float = body_radius + 6.0
+	var x0: float = -float(n - 1) * spacing * 0.5
+	for i in n:
+		var g: GraftItem = instance.grafts[i]
+		draw_circle(Vector2(x0 + float(i) * spacing, y), 2.6, g.color)
+
+## Floating name tag so the player can tell their minions apart at a glance
+## (brighter when selected). Sits just above the tier pips.
+func _draw_name() -> void:
+	if instance == null or instance.unit_name.is_empty():
+		return
+	var font: Font = ThemeDB.fallback_font
+	var fs: int = 12
+	var nm: String = instance.unit_name
+	var w: float = font.get_string_size(nm, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var col: Color = Color(1.0, 0.95, 0.5) if selected else Color(0.85, 0.9, 0.95, 0.6)
+	draw_string(font, Vector2(-w * 0.5, -body_radius - 18.0), nm,
+		HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
