@@ -33,6 +33,8 @@ var _flash_t: float = 0.0
 
 func _ready() -> void:
 	randomize()
+	Audio.play_music("music_hub")
+	Audio.set_desperation(false)  # clear any run-end muffle/heartbeat
 	_build_walker()
 	_build_hud()
 	_spawn_occupants()

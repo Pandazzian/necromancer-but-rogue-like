@@ -42,6 +42,22 @@ var _bleed_time: float = 0.0
 ## Surgical Strike mark: the next hit from a Minion is multiplied by this.
 var marked_mult: float = 1.0
 
+## Body sprite (SVG). When set, _draw_body_and_health() draws a shadow instead
+## of the old flat circle and the sprite carries the look.
+var sprite: Sprite2D = null
+## Flip the sprite to face the walk direction. Player turns this off and faces
+## the cursor instead.
+var flip_from_velocity: bool = true
+var _sprite_base_scale: float = 1.0
+var _hit_flash: float = 0.0
+var _walk_t: float = 0.0
+var _idle_t: float = 0.0
+## Attack lunge/recoil offset; set by attack_punch(), decays each frame.
+var _punch: Vector2 = Vector2.ZERO
+## Rise-from-the-grave materialisation (minions being raised, spawns).
+var _rise_t: float = 0.0
+var _rise_dur: float = 0.0
+
 func _ready() -> void:
 	current_hp = max_hp
 
@@ -51,6 +67,76 @@ func _process(delta: float) -> void:
 	if _bleed_time > 0.0 and not is_dead:
 		_bleed_time -= delta
 		take_true_damage(_bleed_dps * delta)
+	_animate_sprite(delta)
+
+# --- Sprite body -------------------------------------------------------------
+
+## Attach the SVG body sprite, sized against body_radius. Call at the END of a
+## subclass _ready(), after archetype/tier/elite scaling has settled body_radius.
+## The figure spans roughly [-2*body_radius .. +body_radius] vertically, feet on
+## the collider's bottom edge; overlays should anchor to visual_top().
+func setup_sprite(path: String) -> void:
+	var tex: Texture2D = load(path)
+	if tex == null:
+		return
+	sprite = Sprite2D.new()
+	sprite.texture = tex
+	_sprite_base_scale = (body_radius * 3.0) / 64.0  # sprites are authored on a 64px grid
+	sprite.scale = Vector2(_sprite_base_scale, _sprite_base_scale)
+	sprite.position = Vector2(0.0, -body_radius * 0.5)
+	add_child(sprite)
+
+## Y of the visual head-top, where HP bars / pips / names should sit.
+func visual_top() -> float:
+	return -body_radius * 2.0 if sprite != null else -body_radius
+
+## Kick the sprite toward the target on a melee swing, or back off it on a
+## ranged shot (recoil). Decays automatically in _animate_sprite.
+func attack_punch(toward: Vector2, melee: bool) -> void:
+	var dirn: Vector2 = toward.normalized() if toward.length() > 0.01 else Vector2.RIGHT
+	_punch = dirn * body_radius * (0.6 if melee else -0.3)
+
+## Materialise over `duration` seconds: squashed, translucent and low, rising to
+## full height - the undead clawing out of the ground.
+func start_rise(duration: float) -> void:
+	_rise_dur = maxf(0.05, duration)
+	_rise_t = _rise_dur
+
+## Procedural sprite animation: walk bob, idle breathing, attack punch, rise-in,
+## facing flip and hit-flash. Cheap, runs every frame.
+func _animate_sprite(delta: float) -> void:
+	if sprite == null:
+		return
+	var y: float = -body_radius * 0.5
+	var sy: float = 1.0
+	var moving: bool = velocity.length() > 8.0 and not is_dead
+	if moving:
+		_walk_t += delta * clampf(velocity.length() / 32.0, 4.0, 9.0)
+		sprite.rotation = sin(_walk_t) * 0.07
+		y -= absf(sin(_walk_t)) * body_radius * 0.12
+		if flip_from_velocity and absf(velocity.x) > 8.0:
+			sprite.flip_h = velocity.x < 0.0
+	else:
+		sprite.rotation = lerpf(sprite.rotation, 0.0, minf(1.0, 10.0 * delta))
+		if not is_dead:
+			_idle_t += delta
+			sy = 1.0 + 0.025 * sin(_idle_t * 2.6)  # slow breath
+	# Attack lunge/recoil offset decays back to rest.
+	_punch = _punch.lerp(Vector2.ZERO, minf(1.0, 10.0 * delta))
+	# Rise-from-the-grave: squashed + sunken + translucent, growing to full.
+	var alpha: float = 1.0
+	if _rise_t > 0.0:
+		_rise_t = maxf(0.0, _rise_t - delta)
+		var f: float = 1.0 - _rise_t / _rise_dur
+		sy *= 0.25 + 0.75 * f
+		y += (1.0 - f) * body_radius * 0.7
+		alpha = 0.25 + 0.75 * f
+	sprite.position = Vector2(_punch.x, y + _punch.y)
+	sprite.scale = Vector2(_sprite_base_scale, _sprite_base_scale * sy)
+	_hit_flash = maxf(0.0, _hit_flash - delta)
+	var col: Color = Color.WHITE.lerp(Color(1.0, 0.32, 0.32), clampf(_hit_flash / 0.18, 0.0, 1.0))
+	col.a = alpha
+	sprite.self_modulate = col
 
 ## Open a wound: `dps` true damage for `duration` seconds (refreshes, no stack).
 func apply_bleed(dps: float, duration: float) -> void:
@@ -75,11 +161,14 @@ func apply_archetype(a: UnitArchetype) -> void:
 func perform_attack(target: BaseEntity) -> void:
 	if target == null or not is_instance_valid(target):
 		return
+	var to_target: Vector2 = target.global_position - global_position
 	if attack_type == UnitArchetype.AttackType.MELEE:
+		attack_punch(to_target, true)
 		target.take_damage(attack_damage, self)
 		return
-	var d: Vector2 = target.global_position - global_position
-	d = d.normalized() if d.length() > 0.001 else Vector2.RIGHT
+	var d: Vector2 = to_target.normalized() if to_target.length() > 0.001 else Vector2.RIGHT
+	attack_punch(d, false)  # recoil off the shot
+	Audio.sfx("shoot", -12.0)
 	Projectile.spawn(get_parent(), global_position, d, attack_damage,
 		attack_target_groups, projectile_speed, aoe_radius, body_color, attack_range + 140.0, self)
 
@@ -93,6 +182,9 @@ func take_damage(amount: float, source: Node = null) -> void:
 		marked_mult = 1.0
 	var dealt: float = maxf(1.0, amount - defense)  # always chip at least 1
 	current_hp = maxf(0.0, current_hp - dealt)
+	_hit_flash = 0.18  # red blink on real hits (DoTs use take_true_damage)
+	FX.hit_spark(get_parent(), global_position + Vector2(randf_range(-4, 4), randf_range(-10, -2)))
+	Audio.sfx("hit", -8.0)
 	health_changed.emit(current_hp, max_hp)
 	if current_hp <= 0.0:
 		die()
@@ -149,13 +241,20 @@ func compute_separation(groups: PackedStringArray) -> Vector2:
 		push = push.normalized() * SEPARATION_MAX
 	return push
 
-## Helper for subclasses: draw the body circle + a small HP bar in _draw().
+## Helper for subclasses: body (sprite shadow, or the legacy flat circle when no
+## sprite is attached) + a small HP bar anchored above the visual head.
 func _draw_body_and_health() -> void:
-	draw_circle(Vector2.ZERO, body_radius, body_color)
-	draw_arc(Vector2.ZERO, body_radius, 0.0, TAU, 24, body_color.darkened(0.4), 2.0)
+	if sprite != null:
+		# Grounding shadow under the feet; the Sprite2D child renders the body.
+		draw_set_transform(Vector2(0.0, body_radius * 0.85), 0.0, Vector2(1.0, 0.42))
+		draw_circle(Vector2.ZERO, body_radius * 0.95, Color(0.0, 0.0, 0.0, 0.30))
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	else:
+		draw_circle(Vector2.ZERO, body_radius, body_color)
+		draw_arc(Vector2.ZERO, body_radius, 0.0, TAU, 24, body_color.darkened(0.4), 2.0)
 	if current_hp < max_hp and not is_dead:
 		var w: float = body_radius * 2.0
-		var y: float = -body_radius - 10.0
+		var y: float = visual_top() - 8.0
 		var frac: float = clampf(current_hp / max_hp, 0.0, 1.0)
 		draw_rect(Rect2(-body_radius, y, w, 4.0), Color(0, 0, 0, 0.6))
 		draw_rect(Rect2(-body_radius, y, w * frac, 4.0), Color(0.3, 0.9, 0.3))

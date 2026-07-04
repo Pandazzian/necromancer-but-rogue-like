@@ -63,6 +63,11 @@ func _ready() -> void:
 	collision_mask = LAYER_WORLD  # walls only; pass through units
 	attack_target_groups = PackedStringArray(["enemies"])
 	order_pos = global_position
+	# Body sprite last: body_radius is final only after archetype + tier scaling.
+	setup_sprite("res://assets/sprites/skeleton_%s.svg" % class_id)
+	start_rise(0.55)  # claw up out of the ground
+	FX.soul_rise(get_parent(), global_position)
+	Audio.sfx("rise", -10.0)
 
 func _physics_process(delta: float) -> void:
 	_atk_cd = maxf(0.0, _atk_cd - delta)
@@ -181,6 +186,7 @@ func _process_lethargy(delta: float) -> void:
 	if _atk_cd <= 0.0:
 		var enemy: BaseEntity = _nearest_enemy_within(LETHARGY_MELEE_RANGE)
 		if enemy != null:
+			attack_punch(enemy.global_position - global_position, true)
 			enemy.take_damage(attack_damage * 0.5, self)  # weakened
 			target = enemy
 			_atk_cd = attack_cooldown
@@ -233,6 +239,7 @@ func perform_attack(atk_target: BaseEntity) -> void:
 	if attack_type != UnitArchetype.AttackType.MELEE:
 		super.perform_attack(atk_target)
 		return
+	attack_punch(atk_target.global_position - global_position, true)
 	var dmg: float = attack_damage
 	if RunState.page_active("ruthless_command") and randf() < 0.15:
 		dmg *= 2.0  # critical strike
@@ -271,6 +278,9 @@ func _on_death() -> void:
 	if player != null and is_instance_valid(player) and player.tome != null \
 			and player.tome.death_clouds and player.is_in_aura(global_position):
 		ToxicCloud.spawn(get_parent(), global_position)
+	DeathFX.spawn(get_parent(), self)  # visual crumble; the node itself goes now
+	FX.bone_burst(get_parent(), global_position)
+	Audio.sfx("bones", -8.0)
 	queue_free()
 
 # --- Rendering -------------------------------------------------------------
@@ -278,8 +288,14 @@ func _on_death() -> void:
 func _draw() -> void:
 	if selected:
 		draw_arc(Vector2.ZERO, body_radius + 6.0, 0.0, TAU, 32, Color(1.0, 1.0, 0.4), 2.0)
-	if state == State.LETHARGY:
-		body_color = _base_color.darkened(0.4)  # dull, drained
+	if sprite != null:
+		# Lethargy drains the sprite grey-dark; higher tiers glow faintly golden.
+		if state == State.LETHARGY:
+			sprite.modulate = Color(0.45, 0.52, 0.5)
+		else:
+			sprite.modulate = Color.WHITE.lerp(Color(1.0, 0.9, 0.62), clampf(0.3 * float(tier - 1), 0.0, 0.6))
+	elif state == State.LETHARGY:
+		body_color = _base_color.darkened(0.4)  # dull, drained (legacy circle path)
 	else:
 		body_color = _base_color
 	_draw_body_and_health()
@@ -294,7 +310,7 @@ func _draw_tier_pips() -> void:
 	if tier <= 1:
 		return
 	for i in range(tier - 1):
-		draw_circle(Vector2(-6.0 + float(i) * 6.0, -body_radius - 7.0), 2.4, Color(1.0, 0.85, 0.3))
+		draw_circle(Vector2(-6.0 + float(i) * 6.0, visual_top() - 5.0), 2.4, Color(1.0, 0.85, 0.3))
 
 ## Small coloured dots beneath the body, one per equipped graft, so grafted
 ## (valuable) minions are recognisable at a glance on the field.
@@ -319,5 +335,5 @@ func _draw_name() -> void:
 	var nm: String = instance.unit_name
 	var w: float = font.get_string_size(nm, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 	var col: Color = Color(1.0, 0.95, 0.5) if selected else Color(0.85, 0.9, 0.95, 0.6)
-	draw_string(font, Vector2(-w * 0.5, -body_radius - 18.0), nm,
+	draw_string(font, Vector2(-w * 0.5, visual_top() - 16.0), nm,
 		HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)

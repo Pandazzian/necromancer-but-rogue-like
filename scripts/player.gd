@@ -38,6 +38,7 @@ var _still_time: float = 0.0
 
 var _bind_timer: float = 0.0
 var _bind_target: Node2D = null
+var _bind_fx: CPUParticles2D = null  # soul wisps corpse -> Necromancer while channeling
 var _desperation_atk_cd: float = 0.0
 var _ability_cd: float = 0.0
 var _refuse_flash: float = 0.0     # red no-entry blink when an action is denied
@@ -61,6 +62,12 @@ func _ready() -> void:
 	add_to_group("player")
 	collision_layer = LAYER_PLAYER
 	collision_mask = LAYER_WORLD  # walls only; pass through units
+	# Body sprite: the Necromancer faces the cursor, not the walk direction,
+	# and wears a faint wash of the equipped Tome's colour.
+	setup_sprite("res://assets/sprites/necromancer.svg")
+	flip_from_velocity = false
+	if sprite != null:
+		sprite.modulate = Color.WHITE.lerp(tome.color, 0.22)
 
 func _physics_process(delta: float) -> void:
 	_desperation_atk_cd = maxf(0.0, _desperation_atk_cd - delta)
@@ -70,6 +77,8 @@ func _physics_process(delta: float) -> void:
 	var to_mouse: Vector2 = get_global_mouse_position() - global_position
 	if to_mouse.length() > 1.0:
 		facing = to_mouse.normalized()
+	if sprite != null:
+		sprite.flip_h = facing.x < 0.0
 	_update_marrow_shield(delta)
 
 	# Frozen while the player is in a menu / typing (rename, inventory).
@@ -121,9 +130,11 @@ func _try_transfusion() -> void:
 		return
 	take_true_damage(cost)
 	_ability_cd = 1.0
+	Audio.sfx("transfusion", -6.0)
 	for m in get_tree().get_nodes_in_group("minions"):
 		if m is Minion and not (m as Minion).is_dead and is_in_aura((m as Minion).global_position):
 			(m as Minion).heal((m as Minion).max_hp * 0.2)
+			FX.heal_motes(m.get_parent(), (m as Minion).global_position)
 
 ## Start a Soul Bind if a corpse is in range. Elite remains demand a Soul Jar
 ## charge (GDD 3.2); a full party AND crypt refuses outright.
@@ -156,6 +167,9 @@ func _move(speed_scale: float) -> void:
 func _begin_channel(corpse: Node2D) -> void:
 	_bind_target = corpse
 	_bind_timer = 0.0
+	var to_me: Vector2 = (global_position - corpse.global_position).normalized()
+	_bind_fx = FX.soul_stream(get_parent(), corpse.global_position, to_me, 90.0)
+	Audio.bind_hum(true)
 	_set_state(State.CHANNELING)
 
 func _process_channeling(delta: float) -> void:
@@ -169,17 +183,32 @@ func _process_channeling(delta: float) -> void:
 			or not Input.is_action_pressed("soul_bind"):
 		_cancel_channel()
 		return
+	# Keep the wisp stream aimed at the (moving) Necromancer.
+	if _bind_fx != null and is_instance_valid(_bind_fx):
+		var d: Vector2 = global_position - _bind_fx.global_position
+		if d.length() > 1.0:
+			_bind_fx.direction = d.normalized()
+			_bind_fx.initial_velocity_min = d.length() * 1.6
+			_bind_fx.initial_velocity_max = d.length() * 2.2
 	_bind_timer += delta
 	if _bind_timer >= soul_bind_time:
 		var bound := _bind_target
 		_bind_target = null
+		_end_bind_stream()
 		_set_state(State.COMMANDER)
 		soul_bind_completed.emit(bound)
 
 func _cancel_channel() -> void:
 	_bind_target = null
 	_bind_timer = 0.0
+	_end_bind_stream()
 	_set_state(State.COMMANDER)
+
+func _end_bind_stream() -> void:
+	Audio.bind_hum(false)
+	if _bind_fx != null:
+		FX.stop_stream(_bind_fx)
+		_bind_fx = null
 
 # --- Desperation Mode (GDD 3.3, weapon per Tome §4) --------------------------
 
@@ -335,6 +364,9 @@ func _on_death() -> void:
 	# Game-over handling is owned by Main; just stop the body here.
 	set_physics_process(false)
 	body_color = Color(0.4, 0.4, 0.45)
+	if sprite != null:
+		sprite.modulate = Color(0.4, 0.4, 0.45)
+		sprite.rotation = 0.35  # slumped
 
 func _draw() -> void:
 	if state != State.DESPERATION:
@@ -360,7 +392,7 @@ func _draw() -> void:
 		draw_arc(Vector2.ZERO, body_radius + 6.0, -PI / 2.0, -PI / 2.0 + TAU * frac2, 32, Color(0.6, 1.0, 0.7), 3.0)
 	# Refusal feedback: a red no-entry ring above the head.
 	if _refuse_flash > 0.0:
-		var c := Vector2(0.0, -body_radius - 22.0)
+		var c := Vector2(0.0, visual_top() - 14.0)
 		var a: float = clampf(_refuse_flash / 0.6, 0.0, 1.0)
 		draw_arc(c, 9.0, 0.0, TAU, 20, Color(1.0, 0.25, 0.25, a), 2.5)
 		draw_line(c + Vector2(-6.4, -6.4), c + Vector2(6.4, 6.4), Color(1.0, 0.25, 0.25, a), 2.5)

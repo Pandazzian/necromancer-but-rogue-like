@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Bone Bulwark: hulking skeleton, blue-steel plate, massive tower shield -->
+  <!-- legs -->
+  <rect x="25" y="47" width="5" height="12" rx="2.4" fill="#ddd6c4"/>
+  <rect x="34" y="47" width="5" height="12" rx="2.4" fill="#ddd6c4"/>
+  <!-- broad armored torso -->
+  <path d="M19 27 L45 27 L47 48 L17 48 Z" fill="#3d5478"/>
+  <path d="M19 27 L32 27 L32 48 L17 48 Z" fill="#4a6791"/>
+  <!-- plate rivets & seam -->
+  <line x1="32" y1="28" x2="32" y2="47" stroke="#2c3d57" stroke-width="1.4"/>
+  <circle cx="22" cy="31" r="1.1" fill="#8fa8c8"/>
+  <circle cx="42" cy="31" r="1.1" fill="#8fa8c8"/>
+  <circle cx="21" cy="44" r="1.1" fill="#8fa8c8"/>
+  <circle cx="43" cy="44" r="1.1" fill="#8fa8c8"/>
+  <!-- pauldrons -->
+  <ellipse cx="19" cy="28" rx="6.5" ry="4.5" fill="#557299"/>
+  <ellipse cx="45" cy="28" rx="6.5" ry="4.5" fill="#557299"/>
+  <!-- skull with heavy helm -->
+  <circle cx="32" cy="16" r="10" fill="#ece5d3"/>
+  <path d="M22 15 C22 7 42 7 42 15 L42 18 L38 18 L38 14 L26 14 L26 18 L22 18 Z" fill="#4a6791"/>
+  <circle cx="28" cy="17" r="2.4" fill="#1c1c26"/>
+  <circle cx="36" cy="17" r="2.4" fill="#1c1c26"/>
+  <circle cx="28.3" cy="17" r="0.9" fill="#7fe8a0"/>
+  <circle cx="36.3" cy="17" r="0.9" fill="#7fe8a0"/>
+  <!-- tower shield (left side, nearly body-height) -->
+  <rect x="6" y="22" width="13" height="30" rx="3" fill="#5d6b7d"/>
+  <rect x="7.6" y="23.6" width="9.8" height="26.8" rx="2" fill="#75879c"/>
+  <path d="M12.5 28 L15 33 L12.5 45 L10 33 Z" fill="#4a6791"/>
+  <!-- mace arm (right) -->
+  <rect x="43" y="32" width="9" height="3.6" rx="1.8" fill="#ddd6c4"/>
+  <circle cx="54" cy="30" r="4.6" fill="#5d6b7d"/>
+  <circle cx="54" cy="30" r="2" fill="#8fa8c8"/>
+</svg>

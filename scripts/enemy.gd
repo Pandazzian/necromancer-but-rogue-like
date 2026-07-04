@@ -52,6 +52,9 @@ func _ready() -> void:
 	collision_layer = LAYER_ENEMY
 	collision_mask = LAYER_WORLD  # walls only; pass through units
 	attack_target_groups = PackedStringArray(["minions", "player"])
+	# Body sprite last: elite/boss scaling above has settled body_radius.
+	setup_sprite("res://assets/sprites/inquisitor_%s.svg" % class_id)
+	start_rise(0.25)  # brief march-in fade so spawns don't pop
 
 func _physics_process(delta: float) -> void:
 	_atk_cd = maxf(0.0, _atk_cd - delta)
@@ -142,6 +145,9 @@ func _on_death() -> void:
 	_maybe_drop_graft()
 	if is_boss:
 		_maybe_drop_graft()  # bosses guarantee a second organ (GDD 3.5)
+	DeathFX.spawn(get_parent(), self)  # topple visual; corpse lands beneath it
+	FX.bone_burst(get_parent(), global_position)
+	Audio.sfx("bones", -8.0)
 	queue_free()
 
 ## Elites always drop; regular Inquisitors drop by chance (GDD 3.5 harvesting).
@@ -165,6 +171,6 @@ func _draw() -> void:
 	if marked_mult > 1.0:
 		draw_arc(Vector2.ZERO, body_radius + 2.0, 0.0, TAU, 24, Color(0.5, 1.0, 0.6, 0.9), 1.5)
 	if _stun_timer > 0.0:
-		draw_arc(Vector2(0, -body_radius - 6.0), 4.0, 0.0, TAU, 12, Color(1, 1, 1, 0.8), 1.5)
+		draw_arc(Vector2(0, visual_top() - 6.0), 4.0, 0.0, TAU, 12, Color(1, 1, 1, 0.8), 1.5)
 	if _attack_flash > 0.0 and target != null and is_instance_valid(target):
 		draw_line(Vector2.ZERO, to_local(target.global_position), Color(1, 0.4, 0.4, 0.9), 2.0)

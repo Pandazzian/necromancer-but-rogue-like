@@ -19,6 +19,7 @@ config/run/main_scene="res://scenes/hub.tscn"
 [autoload]
 
 Classes="*res://scripts/classes.gd"
+Audio="*res://scripts/audio.gd"
 Names="*res://scripts/minion_names.gd"
 Grafts="*res://scripts/grafts.gd"
 Tomes="*res://scripts/tomes.gd"

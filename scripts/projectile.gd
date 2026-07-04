@@ -76,6 +76,8 @@ func _detonate(hit: BaseEntity) -> void:
 					if global_position.distance_to(e.global_position) <= aoe_radius:
 						_deal(e)
 		_blast = 0.15  # linger briefly to show the blast
+		FX.blast(get_parent(), global_position, color, aoe_radius)
+		Audio.sfx("blast", -6.0)
 		queue_redraw()
 	else:
 		if hit != null:
@@ -96,5 +98,11 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, aoe_radius, Color(color.r, color.g, color.b, 0.22))
 		draw_arc(Vector2.ZERO, aoe_radius, 0.0, TAU, 40, color, 2.0)
 	else:
+		# Motion trail: fading segments streaking behind the bolt.
+		var tail_len: float = minf(_traveled, 30.0)
+		if tail_len > 2.0:
+			var back: Vector2 = -dir * tail_len
+			draw_line(back, back * 0.4, Color(color.r, color.g, color.b, 0.15), 2.0)
+			draw_line(back * 0.4, Vector2.ZERO, Color(color.r, color.g, color.b, 0.45), 3.0)
 		draw_circle(Vector2.ZERO, 5.0, color)
 		draw_arc(Vector2.ZERO, 5.0, 0.0, TAU, 12, color.lightened(0.4), 1.5)

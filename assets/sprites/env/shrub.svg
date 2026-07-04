@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Dead, twisted shrub clinging to the crypt floor. -->
+  <ellipse cx="32" cy="55" rx="15" ry="4.6" fill="#000000" opacity="0.25"/>
+  <!-- gnarled trunk and branches -->
+  <path d="M32 55 C31 46 30 42 26 36 C23 32 22 28 23 24" fill="none" stroke="#4a3c32" stroke-width="3.4" stroke-linecap="round"/>
+  <path d="M31 46 C34 40 37 37 41 34 C43 32.4 44 29 43.6 26" fill="none" stroke="#4a3c32" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M30 42 C27 40 24 40 20 41" fill="none" stroke="#43362c" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M33 38 C35 34 35 31 34 27" fill="none" stroke="#43362c" stroke-width="2" stroke-linecap="round"/>
+  <path d="M41 34 C44 33 46 33.5 49 36" fill="none" stroke="#3c3028" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M23 24 C22 21 22.5 19 24 16 M23 24 C25 22 27 21.6 29 22" fill="none" stroke="#3c3028" stroke-width="1.6" stroke-linecap="round"/>
+  <!-- few clinging dead leaves -->
+  <ellipse cx="24.5" cy="15.5" rx="2.4" ry="1.5" fill="#5c4a30" transform="rotate(-28 24.5 15.5)"/>
+  <ellipse cx="44" cy="25" rx="2.2" ry="1.4" fill="#5c4a30" transform="rotate(22 44 25)"/>
+  <ellipse cx="50" cy="36.4" rx="2" ry="1.3" fill="#52422c" transform="rotate(40 50 36.4)"/>
+  <ellipse cx="19.4" cy="41" rx="2" ry="1.3" fill="#52422c" transform="rotate(-12 19.4 41)"/>
+  <!-- sparse grave-grass -->
+  <path d="M40 55 C41 51.6 42.4 50.6 43 48 M43 55 C44 52.4 45.6 51.6 46.6 50" fill="none" stroke="#3d543a" stroke-width="1.5" stroke-linecap="round" opacity="0.8"/>
+</svg>

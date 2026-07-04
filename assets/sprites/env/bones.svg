@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Old floor scatter: sun-bleached bones, no soul left in them. -->
+  <ellipse cx="32" cy="44" rx="20" ry="6" fill="#000000" opacity="0.18"/>
+  <!-- femur -->
+  <rect x="14" y="36" width="20" height="3.4" rx="1.7" fill="#c9c2ae" transform="rotate(-12 24 37.7)"/>
+  <circle cx="13.4" cy="40.6" r="2.6" fill="#c9c2ae"/>
+  <circle cx="16" cy="43" r="2.2" fill="#c9c2ae"/>
+  <circle cx="34" cy="33.6" r="2.4" fill="#c9c2ae"/>
+  <!-- second bone -->
+  <rect x="34" y="42" width="15" height="2.8" rx="1.4" fill="#b8b19d" transform="rotate(14 41.5 43.4)"/>
+  <circle cx="33.6" cy="41.8" r="2" fill="#b8b19d"/>
+  <circle cx="49.4" cy="46" r="2" fill="#b8b19d"/>
+  <!-- cracked skull half-buried -->
+  <circle cx="42" cy="30" r="6.4" fill="#d3ccb8" transform="rotate(24 42 30)"/>
+  <ellipse cx="40" cy="29" rx="1.7" ry="2" fill="#26262e" transform="rotate(24 40 29)"/>
+  <ellipse cx="44.6" cy="30.6" rx="1.7" ry="2" fill="#26262e" transform="rotate(24 44.6 30.6)"/>
+  <path d="M45 24 L47 27 L44.4 27.6" fill="none" stroke="#9a9382" stroke-width="1.1"/>
+  <!-- ribs poking up -->
+  <path d="M20 30 C21 26 24 25 26 26 M24 32 C25 28 28 27 30 28" fill="none" stroke="#c9c2ae" stroke-width="1.8" stroke-linecap="round"/>
+</svg>

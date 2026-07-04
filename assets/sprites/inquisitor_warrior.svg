@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Inquisitor: steel plate, crimson tabard with silver flame, longsword -->
+  <!-- legs -->
+  <rect x="26" y="46" width="4.4" height="13" rx="2" fill="#6b7480"/>
+  <rect x="33.6" y="46" width="4.4" height="13" rx="2" fill="#6b7480"/>
+  <!-- armored torso -->
+  <path d="M22 27 L42 27 L44 47 L20 47 Z" fill="#7d8794"/>
+  <path d="M22 27 L32 27 L32 47 L20 47 Z" fill="#98a3b1"/>
+  <!-- crimson tabard -->
+  <path d="M27 27 L37 27 L38 47 L32 51 L26 47 Z" fill="#a83232"/>
+  <path d="M27 27 L32 27 L32 51 L26 47 Z" fill="#c24444"/>
+  <!-- silver flame emblem -->
+  <path d="M32 33 C34.5 36 34.5 38.5 32 41 C29.5 38.5 29.5 36 32 33 Z" fill="#e8ecf2"/>
+  <!-- pauldrons -->
+  <ellipse cx="22" cy="28" rx="5.5" ry="4" fill="#98a3b1"/>
+  <ellipse cx="42" cy="28" rx="5.5" ry="4" fill="#98a3b1"/>
+  <!-- great helm with narrow visor -->
+  <path d="M23 10 C23 4 41 4 41 10 L41 22 C41 25 23 25 23 22 Z" fill="#8b95a3"/>
+  <path d="M23 10 C23 4 32 4 32 4 L32 24 C27 24 23 23.5 23 22 Z" fill="#a4aebc"/>
+  <rect x="25.5" y="13" width="13" height="2.6" rx="1.3" fill="#141824"/>
+  <circle cx="28.5" cy="14.3" r="0.9" fill="#ffb443"/>
+  <circle cx="35.5" cy="14.3" r="0.9" fill="#ffb443"/>
+  <!-- helm crest -->
+  <path d="M30.5 3 L33.5 3 L33 8 L31 8 Z" fill="#a83232"/>
+  <!-- sword arm (right) -->
+  <rect x="41" y="31" width="9" height="3.4" rx="1.7" fill="#98a3b1"/>
+  <rect x="48.6" y="12" width="3.6" height="24" rx="1.5" fill="#cfd6df"/>
+  <rect x="45.5" y="33.4" width="9.6" height="3" rx="1.2" fill="#5d4a2f"/>
+  <path d="M50.4 8 L52.2 12 L48.6 12 Z" fill="#cfd6df"/>
+  <!-- off hand -->
+  <rect x="15" y="31" width="8" height="3.4" rx="1.7" fill="#98a3b1"/>
+</svg>

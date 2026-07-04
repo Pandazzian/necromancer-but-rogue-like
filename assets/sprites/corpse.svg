@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Fallen remains: a slumped bone pile. Tinted in-engine by the dead unit's
+       class colour via modulate, so keep it near-white/neutral. -->
+  <!-- ground stain -->
+  <ellipse cx="32" cy="40" rx="22" ry="9" fill="#000000" opacity="0.18"/>
+  <!-- rib arc lying across -->
+  <path d="M18 38 C22 30 42 30 46 38" fill="none" stroke="#d8d2c2" stroke-width="3" stroke-linecap="round"/>
+  <path d="M22 39 C26 33 38 33 42 39" fill="none" stroke="#b8b2a2" stroke-width="2.4" stroke-linecap="round"/>
+  <!-- scattered long bones -->
+  <rect x="14" y="40" width="16" height="3" rx="1.5" fill="#d8d2c2" transform="rotate(-14 22 41.5)"/>
+  <circle cx="13.4" cy="43.6" r="2.2" fill="#d8d2c2"/>
+  <circle cx="29.4" cy="39.4" r="2.2" fill="#d8d2c2"/>
+  <rect x="34" y="42" width="14" height="2.6" rx="1.3" fill="#c8c2b2" transform="rotate(10 41 43.3)"/>
+  <circle cx="34.4" cy="42.6" r="2" fill="#c8c2b2"/>
+  <circle cx="48" cy="45" r="2" fill="#c8c2b2"/>
+  <!-- skull, tipped over -->
+  <circle cx="40" cy="32" r="7.5" fill="#e4ddcb" transform="rotate(18 40 32)"/>
+  <path d="M35 37 L44 38.5 L43.5 41.5 L35.5 40 Z" fill="#e4ddcb" transform="rotate(18 40 37)"/>
+  <ellipse cx="37.6" cy="31" rx="2" ry="2.3" fill="#22222c" transform="rotate(18 37.6 31)"/>
+  <ellipse cx="43" cy="32.6" rx="2" ry="2.3" fill="#22222c" transform="rotate(18 43 32.6)"/>
+  <!-- faint soul wisp curling up -->
+  <path d="M31 26 C29 22 33 20 31.5 16 C30.5 13.4 32.5 11.6 34 10" fill="none" stroke="#bfeada" stroke-width="2" stroke-linecap="round" opacity="0.55"/>
+  <circle cx="34.6" cy="8.6" r="1.8" fill="#bfeada" opacity="0.7"/>
+</svg>

@@ -31,6 +31,10 @@ func _ready() -> void:
 	commander.player = player
 	player.soul_bind_completed.connect(_on_soul_bind_completed)
 	player.died.connect(_on_player_died)
+	# Run soundtrack + the Desperation audio treatment (GDD 3.3).
+	Audio.play_music("music_run")
+	player.state_changed.connect(func(s: int) -> void:
+		Audio.set_desperation(s == Player.State.DESPERATION))
 
 	# Mouse-driven selected-minion card (name / stats / rename).
 	_minion_panel = MinionPanel.new()
@@ -81,6 +85,8 @@ func _collect_pickups() -> void:
 	for p in get_tree().get_nodes_in_group("graft_pickups"):
 		if p is GraftPickup and player.global_position.distance_to(p.global_position) <= PICKUP_RANGE:
 			player.inventory.add_graft(p.graft)
+			FX.pickup_sparkle(actors, p.global_position, p.graft.color)
+			Audio.sfx("pickup", -8.0)
 			p.queue_free()
 
 # --- Room flow -------------------------------------------------------------
@@ -192,6 +198,8 @@ func _on_soul_bind_completed(corpse: Node2D) -> void:
 	var tier: int = int(corpse.get("source_tier")) if "source_tier" in corpse else 1
 	if bool(corpse.get("source_elite")):
 		RunState.soul_jars -= 1
+	FX.soul_burst(actors, corpse.global_position)
+	Audio.sfx("soul_burst", -5.0)
 	var result: Dictionary = player.inventory.capture(cid, tier)
 	if result.dest == "party":
 		_spawn_minion(result.inst, corpse.global_position)

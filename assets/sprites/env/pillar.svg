@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Broken fluted column on a cracked plinth. Shadow baked in. -->
+  <ellipse cx="32" cy="57" rx="19" ry="5.5" fill="#000000" opacity="0.3"/>
+  <!-- plinth -->
+  <rect x="16" y="48" width="32" height="9" rx="2" fill="#565660"/>
+  <rect x="16" y="48" width="16" height="9" rx="2" fill="#62626e"/>
+  <!-- shaft -->
+  <rect x="21" y="18" width="22" height="32" fill="#6a6a76"/>
+  <rect x="21" y="18" width="11" height="32" fill="#757583"/>
+  <!-- flutes -->
+  <line x1="26" y1="19" x2="26" y2="49" stroke="#55555f" stroke-width="1.6"/>
+  <line x1="32" y1="19" x2="32" y2="49" stroke="#55555f" stroke-width="1.6"/>
+  <line x1="38" y1="19" x2="38" y2="49" stroke="#55555f" stroke-width="1.6"/>
+  <!-- jagged broken top -->
+  <path d="M21 20 L25 12 L29 17 L33 9 L37 15 L43 11 L43 22 L21 22 Z" fill="#7d7d8b"/>
+  <path d="M21 20 L25 12 L29 17 L32 11 L32 22 L21 22 Z" fill="#8a8a98"/>
+  <!-- cracks + fallen chunk -->
+  <path d="M36 30 L40 34 L38 40" fill="none" stroke="#4c4c56" stroke-width="1.4"/>
+  <path d="M24 42 L27 45" fill="none" stroke="#4c4c56" stroke-width="1.2"/>
+  <path d="M48 52 L54 50 L56 55 L50 57 Z" fill="#62626e"/>
+  <!-- moss at base -->
+  <path d="M17 48 C21 45 24 49 19 50 Z" fill="#3f5a3a" opacity="0.8"/>
+</svg>
