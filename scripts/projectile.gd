@@ -13,12 +13,18 @@ var aoe_radius: float = 0.0
 var color: Color = Color.WHITE
 var max_dist: float = 400.0
 
+## Who fired this (credited as the damage source for marks, life-steal, reflect).
+var source: BaseEntity = null
+## Seconds of stun applied to enemies hit (used by the Vermin Lord's rats).
+var stun: float = 0.0
+
 var _traveled: float = 0.0
 var _blast: float = 0.0  # >0 while the AoE detonation flash is showing
 
 ## Fire a projectile from `shooter_parent` (kept in that node so it despawns with it).
 static func spawn(shooter_parent: Node, pos: Vector2, direction: Vector2, dmg: float,
-		groups: PackedStringArray, spd: float, aoe: float, col: Color, range_px: float) -> void:
+		groups: PackedStringArray, spd: float, aoe: float, col: Color, range_px: float,
+		src: BaseEntity = null, stun_s: float = 0.0) -> void:
 	if shooter_parent == null or not is_instance_valid(shooter_parent):
 		return
 	var p: Projectile = SCENE.instantiate()
@@ -29,6 +35,8 @@ static func spawn(shooter_parent: Node, pos: Vector2, direction: Vector2, dmg: f
 	p.aoe_radius = aoe
 	p.color = col
 	p.max_dist = range_px
+	p.source = src
+	p.stun = stun_s
 	p.position = pos  # parents (Actors / Room) sit at the origin, so this is world-space
 	shooter_parent.add_child(p)
 
@@ -66,18 +74,35 @@ func _detonate(hit: BaseEntity) -> void:
 				if n is BaseEntity and not (n as BaseEntity).is_dead:
 					var e := n as BaseEntity
 					if global_position.distance_to(e.global_position) <= aoe_radius:
-						e.take_damage(damage, self)
+						_deal(e)
 		_blast = 0.15  # linger briefly to show the blast
+		FX.blast(get_parent(), global_position, color, aoe_radius)
+		Audio.sfx("blast", -6.0)
 		queue_redraw()
 	else:
 		if hit != null:
-			hit.take_damage(damage, self)
+			_deal(hit)
 		queue_free()
+
+func _deal(e: BaseEntity) -> void:
+	var src: Node = source if source != null and is_instance_valid(source) else self
+	e.take_damage(damage, src)
+	if stun > 0.0 and e is Enemy:
+		(e as Enemy).apply_stun(stun)
+	# Life-steal travels with the minion's projectiles too (Vampiric Aura).
+	if src is Minion:
+		(src as Minion).on_damage_dealt(damage)
 
 func _draw() -> void:
 	if _blast > 0.0:
 		draw_circle(Vector2.ZERO, aoe_radius, Color(color.r, color.g, color.b, 0.22))
 		draw_arc(Vector2.ZERO, aoe_radius, 0.0, TAU, 40, color, 2.0)
 	else:
+		# Motion trail: fading segments streaking behind the bolt.
+		var tail_len: float = minf(_traveled, 30.0)
+		if tail_len > 2.0:
+			var back: Vector2 = -dir * tail_len
+			draw_line(back, back * 0.4, Color(color.r, color.g, color.b, 0.15), 2.0)
+			draw_line(back * 0.4, Vector2.ZERO, Color(color.r, color.g, color.b, 0.45), 3.0)
 		draw_circle(Vector2.ZERO, 5.0, color)
 		draw_arc(Vector2.ZERO, 5.0, 0.0, TAU, 12, color.lightened(0.4), 1.5)

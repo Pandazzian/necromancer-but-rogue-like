@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Bone Archer: lean skeleton, olive hood-scarf, longbow drawn -->
+  <!-- legs -->
+  <rect x="27" y="46" width="3.6" height="13" rx="1.8" fill="#ddd6c4"/>
+  <rect x="34" y="46" width="3.6" height="13" rx="1.8" fill="#ddd6c4"/>
+  <!-- quiver on back -->
+  <rect x="38" y="26" width="6" height="14" rx="2.4" fill="#5d4a2f" transform="rotate(18 41 33)"/>
+  <line x1="42" y1="24" x2="44.5" y2="20" stroke="#9a927e" stroke-width="1.6"/>
+  <line x1="44.5" y1="25" x2="47" y2="21.5" stroke="#9a927e" stroke-width="1.6"/>
+  <!-- lean tunic -->
+  <path d="M24 29 L40 29 L41 46 L37 44 L32 47 L27 44 L23 46 Z" fill="#7a8f3a"/>
+  <path d="M24 29 L32 29 L32 47 L27 44 L23 46 Z" fill="#93ad46"/>
+  <!-- skull with hood-scarf -->
+  <circle cx="32" cy="16" r="9.5" fill="#ece5d3"/>
+  <path d="M23 13 C23 6 41 6 41 13 L41 17 L37 15 L27 15 L23 17 Z" fill="#93ad46"/>
+  <path d="M23 16 C26 20 38 20 41 16 L41 20 C36 23 28 23 23 20 Z" fill="#7a8f3a"/>
+  <circle cx="28.5" cy="16" r="2.3" fill="#1c1c26"/>
+  <circle cx="35.5" cy="16" r="2.3" fill="#1c1c26"/>
+  <circle cx="28.8" cy="16" r="0.9" fill="#7fe8a0"/>
+  <circle cx="35.8" cy="16" r="0.9" fill="#7fe8a0"/>
+  <!-- bow arm extended right, longbow + nocked arrow -->
+  <rect x="40" y="31" width="10" height="3.2" rx="1.6" fill="#ddd6c4"/>
+  <path d="M52 16 C60 25 60 41 52 50" fill="none" stroke="#7a5a2e" stroke-width="2.6"/>
+  <line x1="52" y1="16" x2="52" y2="50" stroke="#cfc8b8" stroke-width="1"/>
+  <line x1="40" y1="33" x2="55" y2="33" stroke="#9a927e" stroke-width="1.6"/>
+  <path d="M55 33 L51 31 L51 35 Z" fill="#b9c2cc"/>
+  <!-- draw arm -->
+  <rect x="17" y="31" width="9" height="3.2" rx="1.6" fill="#ddd6c4"/>
+</svg>

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Lich Acolyte: skeletal caster in violet vestments, staff with soul-gem -->
+  <!-- tattered robe (covers legs) -->
+  <path d="M32 24 C23 26 20 36 19 52 L23 49 L27 54 L32 50 L37 54 L41 49 L45 52 C44 36 41 26 32 24 Z" fill="#5c4488"/>
+  <path d="M32 25 C25 27 22 37 21 50 L27 54 L32 50 L32 25 Z" fill="#6f54a3"/>
+  <!-- shoulder cowl -->
+  <path d="M22 27 C26 31 38 31 42 27 L42 32 C37 35 27 35 22 32 Z" fill="#43325f"/>
+  <!-- skull -->
+  <circle cx="32" cy="15" r="9.5" fill="#ece5d3"/>
+  <path d="M26 21 L38 21 L37 25 L27 25 Z" fill="#ece5d3"/>
+  <circle cx="28.5" cy="14.5" r="2.4" fill="#1c1c26"/>
+  <circle cx="35.5" cy="14.5" r="2.4" fill="#1c1c26"/>
+  <circle cx="28.8" cy="14.5" r="1" fill="#c390f0"/>
+  <circle cx="35.8" cy="14.5" r="1" fill="#c390f0"/>
+  <!-- floating rune crown fragments -->
+  <rect x="24" y="4" width="3" height="3" fill="#c390f0" opacity="0.7" transform="rotate(20 25.5 5.5)"/>
+  <rect x="31" y="2" width="3" height="3" fill="#c390f0" opacity="0.8" transform="rotate(-12 32.5 3.5)"/>
+  <rect x="38" y="4.5" width="3" height="3" fill="#c390f0" opacity="0.7" transform="rotate(30 39.5 6)"/>
+  <!-- staff arm (right) -->
+  <rect x="40" y="30" width="9" height="3.2" rx="1.6" fill="#ddd6c4"/>
+  <rect x="48.2" y="12" width="3" height="42" rx="1.4" fill="#5d4a2f"/>
+  <!-- soul-gem headpiece -->
+  <path d="M49.7 4 L54 10 L49.7 14 L45.4 10 Z" fill="#b06ee8"/>
+  <path d="M49.7 6 L52.4 10 L49.7 12.4 L47 10 Z" fill="#d9aaff"/>
+  <circle cx="49.7" cy="10" r="7" fill="#b06ee8" opacity="0.22"/>
+  <!-- casting hand (left) with spark -->
+  <rect x="16" y="30" width="8" height="3.2" rx="1.6" fill="#ddd6c4"/>
+  <circle cx="14" cy="31.5" r="2.6" fill="#c390f0"/>
+  <circle cx="14" cy="31.5" r="4.6" fill="#c390f0" opacity="0.3"/>
+</svg>

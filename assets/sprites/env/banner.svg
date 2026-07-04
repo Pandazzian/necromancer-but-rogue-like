@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Hanging banner of the Order of the Silver Flame - these halls are claimed. -->
+  <!-- rod -->
+  <rect x="14" y="4" width="36" height="3.4" rx="1.7" fill="#4a4a55"/>
+  <circle cx="14" cy="5.7" r="2.6" fill="#5b5b68"/>
+  <circle cx="50" cy="5.7" r="2.6" fill="#5b5b68"/>
+  <!-- cloth with tattered hem -->
+  <path d="M18 8 L46 8 L46 44 L42 40 L38 47 L32 42 L26 48 L22 41 L18 45 Z" fill="#8f2a2a"/>
+  <path d="M18 8 L32 8 L32 44.5 L26 48 L22 41 L18 45 Z" fill="#a83434"/>
+  <!-- gold trim -->
+  <rect x="18" y="8" width="28" height="3" fill="#c9a24a"/>
+  <path d="M18 42 L22 38.6 L26 45 L32 39.6 L38 44 L42 37.6 L46 41" fill="none" stroke="#c9a24a" stroke-width="1.4" opacity="0.75"/>
+  <!-- silver flame emblem -->
+  <path d="M32 16 C36.4 21 37.2 25.6 32 31 C26.8 25.6 27.6 21 32 16 Z" fill="#e8ecf2"/>
+  <path d="M32 20 C34.4 23 34.6 25.4 32 28.2 C29.4 25.4 29.6 23 32 20 Z" fill="#b9c2cc"/>
+  <!-- wear and stitching -->
+  <path d="M20 14 L20 38" stroke="#7a2222" stroke-width="1.2" opacity="0.8"/>
+  <path d="M44 12 L44 36" stroke="#7a2222" stroke-width="1.2" opacity="0.8"/>
+  <circle cx="40" cy="33" r="1.4" fill="#701d1d"/>
+  <circle cx="24" cy="20" r="1.1" fill="#701d1d"/>
+</svg>

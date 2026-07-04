@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cq0necro0test"]
+
+[ext_resource type="Script" path="res://scripts/dev_selftest.gd" id="1_test"]
+
+[node name="DevSelftest" type="Node"]
+script = ExtResource("1_test")

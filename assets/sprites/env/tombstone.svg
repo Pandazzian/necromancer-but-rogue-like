@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Weathered grave marker with moss and a grass tuft. Shadow baked in. -->
+  <ellipse cx="32" cy="56" rx="17" ry="5" fill="#000000" opacity="0.3"/>
+  <!-- slab -->
+  <path d="M20 56 L20 26 C20 16 44 16 44 26 L44 56 Z" fill="#61616e"/>
+  <path d="M20 56 L20 26 C20 18 32 16.5 32 16.5 L32 56 Z" fill="#6e6e7c"/>
+  <!-- chipped edge -->
+  <path d="M44 30 L41 32 L44 35 Z" fill="#4c4c58"/>
+  <!-- engraving -->
+  <rect x="30.4" y="26" width="3.2" height="14" rx="1.2" fill="#4a4a56"/>
+  <rect x="26" y="30" width="12" height="3.2" rx="1.2" fill="#4a4a56"/>
+  <path d="M25 46 L39 46" stroke="#4a4a56" stroke-width="1.6"/>
+  <path d="M27 50 L37 50" stroke="#4a4a56" stroke-width="1.4"/>
+  <!-- moss -->
+  <path d="M20 40 C24 38 25 43 21 44 C19 44.5 19 41 20 40 Z" fill="#3f5a3a" opacity="0.85"/>
+  <path d="M40 22 C43 21 44 25 41 25.5 C39 26 38.5 23 40 22 Z" fill="#3f5a3a" opacity="0.7"/>
+  <!-- grass tufts at the base -->
+  <path d="M18 56 C17 52 16 51 15 49 M19 56 C19.5 52.5 18.5 51 19 48 M22 56 C23 53 24 52 25 50" fill="none" stroke="#3d543a" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M45 56 C46 53 47 52 47.5 50 M43 56 C43.5 53.5 44.5 52 44 49" fill="none" stroke="#37492f" stroke-width="1.6" stroke-linecap="round"/>
+</svg>

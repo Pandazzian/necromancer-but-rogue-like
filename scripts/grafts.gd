@@ -8,15 +8,15 @@ var _defs: Dictionary = {}  # id -> GraftItem
 
 func _ready() -> void:
 	_add("bone_blades", "Serrated Bone-Blades", GraftItem.Category.LIMB,
-		Color(0.9, 0.85, 0.7), "Jagged limbs that carve deeper.", {"dmg": 5.0})
+		Color(0.9, 0.85, 0.7), "Jagged limbs that carve deep and keep bleeding.", {"dmg": 4.0, "bleed": 3.0})
 	_add("iron_sinew", "Iron Sinew", GraftItem.Category.LIMB,
 		Color(0.7, 0.75, 0.85), "Wound-tight muscle; strikes come faster.", {"atk": 0.8})
 	_add("bile_gland", "Volatile Bile Gland", GraftItem.Category.ORGAN,
-		Color(0.6, 0.9, 0.4), "A swollen organ that fuels furious effort.", {"dmg": 3.0, "atk": 0.9})
+		Color(0.6, 0.9, 0.4), "A swollen sac of caustic bile. Bursts when the host falls.", {"dmg": 2.0, "boom": 22.0})
 	_add("swift_tendon", "Swiftrot Tendon", GraftItem.Category.ORGAN,
 		Color(0.5, 0.8, 0.9), "Twitching tendons quicken the dead.", {"move": 1.25})
 	_add("mirror_scales", "Mirror-Glass Scales", GraftItem.Category.CARAPACE,
-		Color(0.85, 0.8, 0.95), "Glassy plating that turns aside blows.", {"def": 3.0})
+		Color(0.85, 0.8, 0.95), "Glassy plating that throws violence back at its source.", {"def": 2.0, "reflect": 0.3})
 	_add("gravebound_plate", "Gravebound Plate", GraftItem.Category.CARAPACE,
 		Color(0.7, 0.6, 0.5), "Slabs of coffin-iron. Heavy, but hard to fell.", {"hp": 30.0, "move": 0.9})
 
@@ -32,6 +32,9 @@ func _add(id: String, name: String, cat: int, col: Color, desc: String, mods: Di
 	g.bonus_defense = mods.get("def", 0.0)
 	g.attack_speed_mult = mods.get("atk", 1.0)
 	g.move_speed_mult = mods.get("move", 1.0)
+	g.bleed_dps = mods.get("bleed", 0.0)
+	g.death_explosion = mods.get("boom", 0.0)
+	g.reflect_pct = mods.get("reflect", 0.0)
 	_defs[id] = g
 
 func get_graft(id: String) -> GraftItem:

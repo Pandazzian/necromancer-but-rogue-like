@@ -72,9 +72,10 @@ func reset_run() -> void:
 
 ## Route a fresh capture (GDD 3.2): a new minion of `cid` joins the active party
 ## if there's room, else the Crypt, else it's turned away. Returns {inst, dest}
-## where dest is "party", "crypt", or "full".
-func capture(cid: String) -> Dictionary:
+## where dest is "party", "crypt", or "full". Elite corpses raise at higher tier.
+func capture(cid: String, tier: int = 1) -> Dictionary:
 	var inst := MinionInstance.create(cid)
+	inst.tier = maxi(1, tier)
 	if party.size() < party_cap:
 		party.append(inst)
 		inventory_changed.emit()
@@ -117,17 +118,38 @@ func find_stitch_partner(inst: MinionInstance) -> MinionInstance:
 
 ## Merge two same-class/same-tier minions into one of Tier+1 (into the Crypt).
 ## The amalgam inherits the grafts of BOTH parents (GDD 3.5 stitching synergy).
+## Under the Stitcher's Almanac the inherited grafts are amplified 20% (4.1);
+## Flesh-Stitching Mastery grants a random permanent affix (Grimoire 5.3).
 func stitch(a: MinionInstance, b: MinionInstance) -> MinionInstance:
 	if not a.can_stitch_with(b):
 		return null
 	var merged := MinionInstance.create(a.class_id)
 	merged.tier = a.tier + 1
 	merged.grafts = a.grafts.duplicate() + b.grafts.duplicate()
+	merged.affix_hp = a.affix_hp + b.affix_hp
+	merged.affix_damage = a.affix_damage + b.affix_damage
+	merged.affix_names = a.affix_names.duplicate() + b.affix_names.duplicate()
+	merged.graft_amp = maxf(a.graft_amp, b.graft_amp) * RunState.tome().stitch_amp
+	if RunState.page_active("stitching_mastery"):
+		_grant_random_affix(merged)
 	remove(a)  # emits
 	remove(b)
 	crypt.append(merged)
 	inventory_changed.emit()
 	return merged
+
+func _grant_random_affix(inst: MinionInstance) -> void:
+	match randi() % 3:
+		0:
+			inst.affix_hp += 20.0
+			inst.affix_names.append("Thick Hide")
+		1:
+			inst.affix_damage += 4.0
+			inst.affix_names.append("Razor Humors")
+		_:
+			inst.affix_hp += 10.0
+			inst.affix_damage += 2.0
+			inst.affix_names.append("Grave-Vigor")
 
 # --- Serialization (save / co-op sync foundation) --------------------------
 

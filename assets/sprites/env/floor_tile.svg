@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Tileable 64x64 stone flags: 4 slabs, 2px grout, subtle cracks.
+       Slabs are inset 1px from every edge so the tile repeats seamlessly. -->
+  <rect width="64" height="64" fill="#111118"/>
+  <rect x="1" y="1" width="30" height="30" rx="2" fill="#1b1b24"/>
+  <rect x="33" y="1" width="30" height="30" rx="2" fill="#191921"/>
+  <rect x="1" y="33" width="30" height="30" rx="2" fill="#1a1a23"/>
+  <rect x="33" y="33" width="30" height="30" rx="2" fill="#1c1c26"/>
+  <!-- top-left catch-light on each slab -->
+  <path d="M3 6 L3 3 L28 3" fill="none" stroke="#262633" stroke-width="1.4" opacity="0.7"/>
+  <path d="M35 6 L35 3 L60 3" fill="none" stroke="#242430" stroke-width="1.4" opacity="0.6"/>
+  <path d="M3 38 L3 35 L28 35" fill="none" stroke="#25252f" stroke-width="1.4" opacity="0.6"/>
+  <path d="M35 38 L35 35 L60 35" fill="none" stroke="#272734" stroke-width="1.4" opacity="0.7"/>
+  <!-- cracks and chips -->
+  <path d="M10 22 L16 26 L15 30" fill="none" stroke="#101016" stroke-width="1.2"/>
+  <path d="M52 8 L47 14 L49 18" fill="none" stroke="#101016" stroke-width="1.2"/>
+  <path d="M22 50 L27 46 L26 41" fill="none" stroke="#101016" stroke-width="1.2"/>
+  <path d="M44 58 L48 52" fill="none" stroke="#101016" stroke-width="1.2"/>
+  <circle cx="12" cy="12" r="1.2" fill="#14141b"/>
+  <circle cx="55" cy="44" r="1.5" fill="#14141b"/>
+  <circle cx="40" cy="24" r="1" fill="#14141b"/>
+</svg>

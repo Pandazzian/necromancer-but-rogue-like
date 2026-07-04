@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cq0necro0hub0"]
+
+[ext_resource type="Script" path="res://scripts/hub.gd" id="1_hub"]
+
+[node name="Hub" type="Node2D"]
+script = ExtResource("1_hub")
